@@ -39,19 +39,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Check formatting (advisory during baseline assessment)
-        continue-on-error: true
+      - name: Check formatting
         run: npx prettier --check src/
 
-      - name: Lint source code (advisory for existing findings)
-        continue-on-error: true
+      - name: Lint source code
         run: npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore
 
       - name: Check TypeScript and Vue types
         run: npm run type-check
 
-      - name: Run unit tests (advisory until frontend tests exist)
-        continue-on-error: true
+      - name: Run unit tests
         run: npm run test:unit -- --run
 
       - name: Validate production build
@@ -138,8 +135,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Audit Python dependencies (advisory for existing findings)
-        continue-on-error: true
+      - name: Audit Python dependencies
         run: pip-audit --requirement requirements.txt
 
   infrastructure:
