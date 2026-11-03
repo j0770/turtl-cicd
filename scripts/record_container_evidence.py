@@ -4,6 +4,7 @@ import argparse
 import base64
 import hashlib
 import json
+import tarfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -43,8 +44,25 @@ def main():
         "sha256:"
         + hashlib.sha256(base64.b64decode(source["config"], validate=True)).hexdigest()
     )
-    if config_digest != image["Id"]:
-        raise ValueError("SBOM source config digest does not match Docker inspect")
+    with tarfile.open(directory / "image.tar") as archive:
+        manifests = json.load(archive.extractfile("manifest.json"))
+        if len(manifests) != 1:
+            raise ValueError("Expected exactly one image in the built archive")
+        archive_config = archive.extractfile(manifests[0]["Config"]).read()
+    if hashlib.sha256(archive_config).hexdigest() != config_digest.removeprefix(
+        "sha256:"
+    ):
+        raise ValueError("SBOM source config does not match the built archive")
+    config = json.loads(archive_config)
+    if (
+        config["config"] != image["Config"]
+        or config["rootfs"]["diff_ids"] != image["RootFS"]["Layers"]
+    ):
+        raise ValueError(
+            "Runtime config or filesystem layers differ from the built archive"
+        )
+    if config["architecture"] != image["Architecture"] or config["os"] != image["Os"]:
+        raise ValueError("Inspected platform differs from the built archive")
     if image["Config"]["Labels"]["org.opencontainers.image.revision"] != args.commit:
         raise ValueError("Image revision does not match the source commit")
     if not image["Config"].get("User") or image["Config"]["User"] in ["root", "0"]:
