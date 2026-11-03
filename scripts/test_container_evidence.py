@@ -31,6 +31,23 @@ class ContainerEvidenceTests(unittest.TestCase):
             SCHEMAS,
         )
 
+    def test_current_spdx_identifier_is_retained(self):
+        module.validate_sbom(
+            {
+                "bomFormat": "CycloneDX",
+                "specVersion": "1.6",
+                "version": 1,
+                "components": [
+                    {
+                        "type": "library",
+                        "name": "example",
+                        "licenses": [{"license": {"id": "SMAIL-GPL"}}],
+                    }
+                ],
+            },
+            SCHEMAS,
+        )
+
     def test_invalid_license_is_rejected(self):
         with self.assertRaises(ValidationError):
             module.validate_sbom(

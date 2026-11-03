@@ -1,6 +1,7 @@
 """Validate an image SBOM and bind it to the inspected image and source commit."""
 
 import argparse
+import base64
 import hashlib
 import json
 from datetime import UTC, datetime
@@ -37,8 +38,13 @@ def main():
     native = json.loads((directory / "image.syft.json").read_text())
     image = json.loads((directory / "image-inspect.json").read_text())[0]
     validate_sbom(bom, Path(__file__).resolve().parents[1] / "schemas/cyclonedx-1.6")
-    if native["source"]["metadata"]["imageID"] != image["Id"]:
-        raise ValueError("SBOM source image ID does not match Docker inspect")
+    source = native["source"]["metadata"]
+    config_digest = (
+        "sha256:"
+        + hashlib.sha256(base64.b64decode(source["config"], validate=True)).hexdigest()
+    )
+    if config_digest != image["Id"]:
+        raise ValueError("SBOM source config digest does not match Docker inspect")
     if image["Config"]["Labels"]["org.opencontainers.image.revision"] != args.commit:
         raise ValueError("Image revision does not match the source commit")
     if not image["Config"].get("User") or image["Config"]["User"] in ["root", "0"]:
@@ -61,12 +67,15 @@ def main():
         "run_url": args.run_url,
         "recorded_at": datetime.now(UTC).isoformat(),
         "image_id": image["Id"],
+        "syft_source_image_id": source["imageID"],
+        "syft_source_config_digest": config_digest,
         "registry_ref": args.registry_ref,
         "runtime_user": image["Config"]["User"],
         "platform": image["Os"] + "/" + image["Architecture"],
         "syft_version": native["descriptor"]["version"],
         "cyclonedx_schema_valid": True,
         "schema_source_commit": "55343ba19dee1785acf1ce9191540d5fd7b590db",
+        "spdx_schema_source_commit": "6470e34ef83f915868ece48934cff52e10c9eb49",
         "component_count": len(bom["components"]),
         "dependency_entries": len(bom.get("dependencies", [])),
         "components_without_license": sum(
