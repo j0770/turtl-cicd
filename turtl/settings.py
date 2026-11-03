@@ -265,6 +265,3 @@ LOGGING = {
         },
     },
 }
-
-# Controlled negative validation; restored after the run.
-CSRF_TRUSTED_ORIGINS = ["invalid-origin"]
