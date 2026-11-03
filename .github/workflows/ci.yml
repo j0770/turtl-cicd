@@ -280,6 +280,7 @@ jobs:
       - name: Prepare non-secret validation files
         run: |
           cp deploy/.env.example deploy/.env
+          cp deploy/frontend/nginx.container.conf deploy/frontend/nginx.conf
           mkdir -p deploy/certs
           touch deploy/certs/turtl.crt deploy/certs/turtl.key deploy/certs/proxmox-ca.pem
 

@@ -13,3 +13,9 @@ deploy/.env.*
 deploy/proxmox-ca.pem
 deploy/certs/
 requirements.in
+.env
+.env.*
+**/.env
+**/.env.*
+.github/
+output/
