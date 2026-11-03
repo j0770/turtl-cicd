@@ -10,7 +10,7 @@ Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Push
 | Backend | Django-Systemprüfung, Ruff `E9,F63,F7,F82,F821,F811`, Django-Tests | Breite Ruff-Regeln einschließlich B/S sowie Formatierung |
 | Infrastruktur | Compose-Konfigurationsprüfung | – |
 | Secrets | Gitleaks | – |
-| Abhängigkeiten | – | Python-Abhängigkeiten mit pip-audit |
+| Abhängigkeiten | – | Python mit pip-audit; Frontend-Lockdatei mit npm audit einschließlich Entwicklungswerkzeugen |
 | PR-Metadaten | Conventional-Commit-Titel | – |
 | CodeQL | Eigener Workflow ohne Fehlerunterdrückung | Nicht erfolgreich validiert, solange Code Scanning nicht verfügbar ist |
 
@@ -61,3 +61,16 @@ Ein grüner CI-Lauf bedeutet weder vollständige Testabdeckung noch erfolgreiche
 Fehler nur in einem separaten Validierungsbranch oder einer temporären Kopie einbringen und anschließend vollständig zurücknehmen. Geeignete Fälle sind ein TypeScript-Typfehler, eine fehlschlagende Testassertion, ein undefinierter Python-Name, eine fehlschlagende Django-Assertion und eine ungültige Compose-Eigenschaft. Für jeden Fall Ausgangscommit, genaue Änderung, erwarteten Fehler, tatsächlichen Status und Log sichern. Für Secret-Scans ausschließlich einen künstlichen, nicht funktionsfähigen Kontrollwert verwenden; niemals echte Zugangsdaten einbringen.
 
 Die Liste ist ein Prüfplan, kein Nachweis bereits durchgeführter Tests. Sicherheitsbefunde, CodeQL-Verfügbarkeit und Merge-Schutz benötigen eigene Nachweise. Release, SBOM, Backup und Deployment bleiben separate offene Arbeitspakete.
+
+
+## Abhängigkeitsberichte
+
+Die zwei getrennten beratenden Auditjobs erzeugen JSON-Rohberichte, eine Zusammenfassung und Kontextdateien mit Werkzeugversionen sowie Prüfsummen der Eingabedateien. Die Artefakte heißen `python-dependency-audit` und `frontend-dependency-audit`; angeforderte Aufbewahrung: 90 Tage. Die Berichte werden auch bei Befunden oder Scannerfehlern hochgeladen, soweit Dateien vorhanden sind. Der jeweilige Job bleibt bei Fehlern rot. Ein grüner Gesamtworkflow bedeutet keine Freigabe der Befunde.
+
+`npm audit --package-lock-only --include=dev --json` prüft die vorhandene Lockdatei ohne Paketinstallation oder Korrektur. Entwicklungsabhängigkeiten werden ausdrücklich einbezogen. Das Ergebnis beschreibt den Abhängigkeitsbaum, nicht die tatsächlich im Browser ausgeführten Komponenten. `pip-audit` prüft die versionierte `requirements.txt`. Die Anzahlen beider Werkzeuge sind nicht direkt vergleichbar: npm nennt betroffene Pakete einschließlich abgeleiteter Befunde, pip-audit Paket-Advisory-Paare. Die Zusammenfassung hält beides getrennt; Alias-Kennungen werden nicht als zusätzliche unabhängige Schwachstellen gezählt.
+
+`scripts/summarize_dependency_audits.py` liefert Status 0 für einen unauffälligen Bericht, 1 für Befunde und 2 für fehlende, unvollständige oder fehlerhafte Berichte. Übersprungene Python-Abhängigkeiten gelten als unvollständige Prüfung. Acht Vertragstests prüfen unter anderem Scannerfehler, fehlende Lockdatei-Einträge, Paketversionen und die Unterscheidung von Paket-Advisory-Paaren und eindeutigen Kennungen. Eine bereits fehlgeschlagene Scanner-Ausführung wird am Jobende nicht durch einen erfolgreichen Bericht überschrieben.
+
+Befunde sind zunächst offen. Für eine Behebung sind Advisory, betroffene Version, Abhängigkeitsweg, mögliche Laufzeit-/Build-Nutzung und vorgeschlagene Fixversion zu prüfen. Anschließend gezielt aktualisieren und Regressionstests ausführen. npm-Fixvorschläge können auch größere oder rückwärts gerichtete Versionswechsel enthalten; deshalb kein ungeprüftes `npm audit fix --force`. Ein Dev-Paket ist nicht automatisch risikofrei: Auch Build- und CI-Prozesse verarbeiten Code und Eingaben.
+
+Es gibt derzeit keine genehmigte pauschale Ausnahme oder behauptete vollständige Sicherheitsfreigabe. Ein späterer Ausnahmeeintrag braucht konkrete Kennung, Begründung, zuständige Person und erneuten Prüftermin. Fehlende CVSS-Daten werden nicht erfunden. Zur Auswahl von Aktualisierungen ist ein gesonderter, getesteter Änderungssatz erforderlich.

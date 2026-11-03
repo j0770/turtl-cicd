@@ -185,8 +185,88 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pip-audit==2.10.1
 
+      - name: Record Python audit inputs
+        run: |
+          python --version > python-audit-context.txt
+          pip-audit --version >> python-audit-context.txt
+          sha256sum requirements.txt requirements.in >> python-audit-context.txt
+
       - name: Audit Python dependencies
-        run: pip-audit --requirement requirements.txt
+        id: python-audit
+        continue-on-error: true
+        run: pip-audit --requirement requirements.txt --format json --output python-audit.json
+
+      - name: Summarize Python audit
+        if: ${{ !cancelled() && steps.python-audit.outcome != 'skipped' }}
+        run: python scripts/summarize_dependency_audits.py --python-report python-audit.json --output python-audit-summary.json
+
+      - name: Preserve Python audit reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-dependency-audit
+          path: |
+            python-audit*.json
+            python-audit-context.txt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Preserve scanner failure status
+        if: ${{ !cancelled() && steps.python-audit.outcome == 'failure' }}
+        run: exit 1
+
+  frontend-dependency-audit:
+    name: Frontend dependency audit (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Set up Python for report processing
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Test audit report processing
+        run: python -m unittest discover -s scripts -p test_dependency_audits.py -v
+
+      - name: Record frontend audit inputs
+        run: |
+          node --version > npm-audit-context.txt
+          npm --version >> npm-audit-context.txt
+          sha256sum frontend/package.json frontend/package-lock.json >> npm-audit-context.txt
+
+      - name: Audit locked frontend dependencies
+        id: npm-audit
+        continue-on-error: true
+        working-directory: frontend
+        run: npm audit --package-lock-only --include=dev --json > ../npm-audit.json
+
+      - name: Summarize frontend audit
+        if: ${{ !cancelled() && steps.npm-audit.outcome != 'skipped' }}
+        run: python scripts/summarize_dependency_audits.py --npm-report npm-audit.json --npm-lock frontend/package-lock.json --output npm-audit-summary.json
+
+      - name: Preserve frontend audit reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dependency-audit
+          path: |
+            npm-audit*.json
+            npm-audit-context.txt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Preserve scanner failure status
+        if: ${{ !cancelled() && steps.npm-audit.outcome == 'failure' }}
+        run: exit 1
 
   infrastructure:
     name: Infrastructure configuration
@@ -224,3 +304,4 @@ jobs:
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
