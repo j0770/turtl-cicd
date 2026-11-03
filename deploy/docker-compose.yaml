@@ -58,7 +58,6 @@ services:
         restart: true
       
   backend:
-    ci_control_invalid: true
     build:
       context: ..
       dockerfile: deploy/backend/backend.Dockerfile

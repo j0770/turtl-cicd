@@ -1,7 +1,0 @@
-[extend]
-useDefault = true
-
-[[rules]]
-id = "turtl-ci-synthetic-control"
-description = "Synthetic validation marker, not a credential"
-regex = '''turtl-ci-control-[0-9]{8}'''
