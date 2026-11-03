@@ -1,0 +1,55 @@
+# Ruff – Python Linter and Formatter Configuration
+# https://docs.astral.sh/ruff/configuration/
+
+target-version = "py312"
+
+exclude = [
+    "migrations",
+    "manage.py",
+    ".ruff_cache",
+]
+
+[lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes (undefined names, unused imports, etc.)
+    "I",      # isort (import sorting)
+    "B",      # flake8-bugbear (common bugs and design problems)
+    "UP",     # pyupgrade (modernize Python syntax for 3.12)
+    "S",      # flake8-bandit (security issues)
+    "SIM",    # flake8-simplify (simplifiable constructs)
+    "T20",    # flake8-print (print statements left in production code)
+    "RUF",    # Ruff-specific rules
+]
+
+ignore = [
+    # Django patterns that conflict with these rules:
+    "S101",   # assert used – fine in tests
+    "S105",   # hardcoded password variable names – Django settings use these
+    "RUF012", # mutable class variable without ClassVar – Django model fields
+]
+
+[lint.per-file-ignores]
+# Tests may use assert, print, and hardcoded credentials
+"**/tests/**" = ["S101", "S105", "S106", "T20"]
+"**/test_*"   = ["S101", "S105", "S106", "T20"]
+# Settings file has special Django patterns
+"turtl/settings.py" = ["S105", "E501"]
+# Management commands may use print
+"**/management/commands/**" = ["T20"]
+
+[lint.isort]
+known-first-party = [
+    "analytics",
+    "authentication",
+    "catalog",
+    "enrollments",
+    "seeder",
+    "shell",
+    "turtl",
+    "vm_manager",
+]
+
+[format]
+quote-style = "double"
