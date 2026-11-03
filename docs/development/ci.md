@@ -74,3 +74,6 @@ Die zwei getrennten beratenden Auditjobs erzeugen JSON-Rohberichte, eine Zusamme
 Befunde sind zunächst offen. Für eine Behebung sind Advisory, betroffene Version, Abhängigkeitsweg, mögliche Laufzeit-/Build-Nutzung und vorgeschlagene Fixversion zu prüfen. Anschließend gezielt aktualisieren und Regressionstests ausführen. npm-Fixvorschläge können auch größere oder rückwärts gerichtete Versionswechsel enthalten; deshalb kein ungeprüftes `npm audit fix --force`. Ein Dev-Paket ist nicht automatisch risikofrei: Auch Build- und CI-Prozesse verarbeiten Code und Eingaben.
 
 Es gibt derzeit keine genehmigte pauschale Ausnahme oder behauptete vollständige Sicherheitsfreigabe. Ein späterer Ausnahmeeintrag braucht konkrete Kennung, Begründung, zuständige Person und erneuten Prüftermin. Fehlende CVSS-Daten werden nicht erfunden. Zur Auswahl von Aktualisierungen ist ein gesonderter, getesteter Änderungssatz erforderlich.
+
+Die [Befundauswertung vom 03.11.2026](dependency-findings-2026-11-03.md) ordnet den ersten vollständigen npm-/Python-Audit ein. Sie bleibt eine datierte Momentaufnahme.
+
