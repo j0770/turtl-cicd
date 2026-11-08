@@ -39,8 +39,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Check formatting (advisory)
-        continue-on-error: true
+      - name: Check frontend formatting
         run: npm run format:check
 
       - name: Lint source code (advisory)
@@ -137,8 +136,7 @@ jobs:
         continue-on-error: true
         run: ruff check .
 
-      - name: Check Python formatting (advisory)
-        continue-on-error: true
+      - name: Check Python formatting
         run: ruff format --check .
 
       - name: Run tests with coverage

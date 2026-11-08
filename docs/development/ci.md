@@ -6,15 +6,17 @@ Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Push
 
 | Bereich | Verpflichtend | Beratend |
 |---|---|---|
-| Frontend | `npm ci`, Typprüfung, Vitest, Produktions-Build | Prettier und ESLint |
-| Backend | Django-Systemprüfung, Ruff `E9,F63,F7,F82,F821,F811`, Django-Tests | Breite Ruff-Regeln einschließlich B/S sowie Formatierung |
+| Frontend | `npm ci`, Prettier für `src/`, Typprüfung, Vitest, Produktions-Build | ESLint |
+| Backend | Django-Systemprüfung, Ruff `E9,F63,F7,F82,F821,F811`, Ruff-Formatprüfung, Django-Tests | Breite Ruff-Regeln einschließlich B/S |
 | Infrastruktur | Compose-Konfigurationsprüfung | – |
 | Secrets | Gitleaks | – |
 | Abhängigkeiten | – | Python mit pip-audit; Frontend-Lockdatei mit npm audit einschließlich Entwicklungswerkzeugen |
 | PR-Metadaten | Conventional-Commit-Titel | – |
 | CodeQL | Eigener Workflow ohne Fehlerunterdrückung | Nicht erfolgreich validiert, solange Code Scanning nicht verfügbar ist |
 
-Beratende Prüfungen verwenden `continue-on-error`. Ihr Befund ist weiterhin zu bearbeiten und kein erfolgreicher Test. Die bestehende Formatierung wird nicht pauschal verändert. Die B-Regeln bleiben vorerst beratend, weil sie im übernommenen Code bekannte Befunde melden. Diese Entscheidung hebt den verpflichtenden Teststatus nicht auf. Ob ein fehlgeschlagener Check einen Merge verhindert, hängt zusätzlich von den Repository-Schutzregeln ab.
+Die Formatter prüfen den Bestand mit den versionierten Einstellungen. Die Frontend-Prüfung verwendet die mit `npm ci` installierte Prettier-Version. Für Python verwendet die CI die festgelegte Ruff-Version und die Ausschlüsse aus `ruff.toml`. Ein Formatverstoß lässt den jeweiligen CI-Job fehlschlagen. Ob dieser Status einen Merge verhindert, hängt von den Repository-Schutzregeln ab.
+
+Die breitere Regelprüfung bleibt beratend, weil sie Befunde enthält, die einzeln bewertet werden müssen. Beratende Prüfungen verwenden `continue-on-error`.
 
 ## Lokal prüfen
 
@@ -47,6 +49,8 @@ coverage json
 ```
 
 Die CI stellt PostgreSQL und Redis als Servicecontainer bereit. Test-Zugangsdaten im Workflow sind ausschließlich für diese kurzlebige Umgebung vorgesehen. Die Proxmox-bezogenen Backend-Tests ersetzen externe Aufrufe durch Mocks. Die Compose-Prüfung erzeugt nur Platzhalterdateien und startet keine Anwendung.
+
+Formatbefunde lassen sich lokal mit `npm run format` aus `frontend/` und `ruff format .` aus der Repository-Wurzel korrigieren. Danach den Diff prüfen und die Prüfkommandos erneut ausführen. Prettier behält die Zeilenendungen des ausgecheckten Textes bei, sodass Git unter Windows und Linux unterschiedliche Zeilenenden verwenden kann.
 
 ## Fehlgeschlagene Läufe und Berichte
 
