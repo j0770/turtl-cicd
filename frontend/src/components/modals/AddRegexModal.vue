@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import * as yup from 'yup'
 import PrimaryButton from '../buttons/PrimaryButton.vue'
 import TextButton from '../buttons/TextButton.vue'
-import type {RegEx} from "@/stores/CatalogStore"
+import type { RegEx } from '@/stores/CatalogStore'
 
 const showDialog = ref(false)
 
@@ -21,7 +21,7 @@ const { value: newPrompt, errorMessage: promptError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentRegex) ? props.currentRegex.prompt : ''
+    initialValue: props.currentRegex ? props.currentRegex.prompt : ''
   }
 )
 
@@ -30,21 +30,20 @@ const { value: newRegex, errorMessage: regexError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentRegex) ? props.currentRegex.pattern : ''
+    initialValue: props.currentRegex ? props.currentRegex.pattern : ''
   }
 )
-
 
 function resetDialog() {
   resetForm()
   showDialog.value = false
 }
 
-const emits = defineEmits<{regExEditingCompleted: [regex: RegEx]}>()
+const emits = defineEmits<{ regExEditingCompleted: [regex: RegEx] }>()
 
 const addRegex = handleSubmit((values) => {
   const regex: RegEx = { prompt: values.prompt, pattern: values.regex }
-  if(props.currentRegex) {
+  if (props.currentRegex) {
     regex.id = props.currentRegex.id
   }
   emits('regExEditingCompleted', regex)
@@ -86,7 +85,10 @@ const addRegex = handleSubmit((values) => {
                 :error-messages="regexError"
               >
               </v-text-field>
-              <small>You do not need the opening or closing forward slashes, just the expression itself.</small>
+              <small
+                >You do not need the opening or closing forward slashes, just the expression
+                itself.</small
+              >
             </v-col>
           </v-row>
           <v-row>

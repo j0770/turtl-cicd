@@ -12,6 +12,7 @@ class Enrollment(RulesModel):
     """
     An enrollment is created when a student enrolls in a classroom.
     """
+
     id = models.AutoField(primary_key=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, editable=False)
     student = models.ForeignKey(User, on_delete=models.CASCADE, editable=False)
@@ -31,11 +32,16 @@ class Enrollment(RulesModel):
         return round((number_of_tasks_solved / number_of_tasks_total) * 100)
 
     class Meta:
-        unique_together = ('classroom', 'student',)
+        unique_together = (
+            "classroom",
+            "student",
+        )
         rules_permissions = {
             "add": is_authenticated,
-            "view": is_authenticated & (owns_enrollment | (is_instructor & manages_enrollment_classroom)),
-            "delete": is_authenticated & (owns_enrollment | (is_instructor & manages_enrollment_classroom)),
+            "view": is_authenticated
+            & (owns_enrollment | (is_instructor & manages_enrollment_classroom)),
+            "delete": is_authenticated
+            & (owns_enrollment | (is_instructor & manages_enrollment_classroom)),
         }
 
 
@@ -43,13 +49,21 @@ class TaskSolution(RulesModel):
     """
     A TaskSolution is created when a student submits a solution to a task.
     """
+
     id = models.AutoField(primary_key=True)
-    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, editable=False, related_name='solutions')
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, editable=False, related_name='solutions')
+    enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.CASCADE, editable=False, related_name="solutions"
+    )
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, editable=False, related_name="solutions"
+    )
     date_submitted = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:
-        unique_together = ('enrollment', 'task',)
+        unique_together = (
+            "enrollment",
+            "task",
+        )
         rules_permissions = {
             "add": is_authenticated,
             "view": is_authenticated,

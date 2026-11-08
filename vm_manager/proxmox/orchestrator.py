@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class ProxmoxManager(ProxmoxClient):
-
     def _get_lab_env_lock_name(self, lab_env_id):
         return f"lab_env_operation_{lab_env_id}"
 
@@ -26,13 +25,19 @@ class ProxmoxManager(ProxmoxClient):
         # create lock on user-task to prevent attempted creation of duplicate environments
         lock_name = f"lab_env_{user.id}_{task.id}"
 
-        with AdvisoryLock(lock_name, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as acquired:
+        with AdvisoryLock(
+            lock_name, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+        ) as acquired:
             if not acquired:
-                raise TimeoutError(f"Could not acquire lock for lab environment creation (user: {user.id}, task: {task.id})")
+                raise TimeoutError(
+                    f"Could not acquire lock for lab environment creation (user: {user.id}, task: {task.id})"
+                )
 
             try:
-                #Check if environment already exists
-                existing_env = LabEnvironment.objects.filter(user=user, task=task).first()
+                # Check if environment already exists
+                existing_env = LabEnvironment.objects.filter(
+                    user=user, task=task
+                ).first()
                 if existing_env:
                     logger.info(
                         "Lab environment already exists for user_id=%s task_id=%s",
@@ -43,7 +48,9 @@ class ProxmoxManager(ProxmoxClient):
 
                 task_config = TaskVMConfiguration.objects.filter(task=task).first()
                 if not task_config:
-                    raise ValueError(f"No VM configuration found for task: {task.title}")
+                    raise ValueError(
+                        f"No VM configuration found for task: {task.title}"
+                    )
 
                 with transaction.atomic():
                     # 1. Assign network from bridge pool if network template is set
@@ -53,17 +60,17 @@ class ProxmoxManager(ProxmoxClient):
 
                     # 2. Create the lab environment record
                     lab_env = LabEnvironment.objects.create(
-                        user=user,
-                        task=task,
-                        network=network
+                        user=user, task=task, network=network
                     )
 
                     # 3. Create all VMs for env
                     for vm_template_config in task_config.vm_templates.all():
-                        self.provision_vm(lab_env, vm_template_config, network, user, task)
+                        self.provision_vm(
+                            lab_env, vm_template_config, network, user, task
+                        )
 
                     # 4. Update lab_env status
-                    lab_env.status = 'active'
+                    lab_env.status = "active"
                     lab_env.last_seen_at = timezone.now()
                     lab_env.stopped_at = None
                     lab_env.save()
@@ -97,10 +104,12 @@ class ProxmoxManager(ProxmoxClient):
             ip_address = None
             if network:
                 ip_address = format_ip(vm_template_config.planned_ip_address, network)
-                bridge_name = os.environ.get('PROXMOX_VLAN_BRIDGE')
+                bridge_name = os.environ.get("PROXMOX_VLAN_BRIDGE")
                 vlan_tag = network.vlan_id
 
-            with AdvisoryLock(vm_creation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as acquired:
+            with AdvisoryLock(
+                vm_creation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+            ) as acquired:
                 if not acquired:
                     raise TimeoutError("Could not acquire lock for VM creation")
 
@@ -112,7 +121,7 @@ class ProxmoxManager(ProxmoxClient):
                     vm_name,
                     vmid,
                 )
-                pool = os.environ.get('PROXMOX_VM_POOL')
+                pool = os.environ.get("PROXMOX_VM_POOL")
 
                 clone_vm(
                     proxmox=self.proxmox,
@@ -125,9 +134,13 @@ class ProxmoxManager(ProxmoxClient):
 
                 logger.debug(
                     "Configuring VM vmid=%s bridge=%s vlan_tag=%s ip=%s cloud_init=%s",
-                    vmid, bridge_name, vlan_tag, ip_address, vm_template_config.cloud_init,
+                    vmid,
+                    bridge_name,
+                    vlan_tag,
+                    ip_address,
+                    vm_template_config.cloud_init,
                 )
-                storage = os.environ.get('PROXMOX_VM_STORAGE')
+                storage = os.environ.get("PROXMOX_VM_STORAGE")
 
                 configure_vm(
                     proxmox=self.proxmox,
@@ -145,16 +158,18 @@ class ProxmoxManager(ProxmoxClient):
                 # Wait for Proxmox
                 wait_for_unlock(self.proxmox, node, vmid)
 
-                #Add VM to database
+                # Add VM to database
                 with transaction.atomic():
                     vm = VirtualMachine.objects.create(
                         vmid=vmid,
                         lab_environment=lab_env,
                         template=template,
                         name=vm_name,
-                        status='creating',
+                        status="creating",
                         network=network,
-                        assigned_ip_address=ip_address.split('/')[0] if ip_address else None
+                        assigned_ip_address=ip_address.split("/")[0]
+                        if ip_address
+                        else None,
                     )
 
                 # Start the VM
@@ -162,7 +177,7 @@ class ProxmoxManager(ProxmoxClient):
                 self.proxmox.nodes(node).qemu(vmid).status.start.post()
 
                 # Update status
-                vm.status = 'running'
+                vm.status = "running"
                 vm.save()
 
             return vm
@@ -180,24 +195,28 @@ class ProxmoxManager(ProxmoxClient):
         Starts all VMs inside a lab environment
         """
         env_operation_lock = self._get_lab_env_lock_name(lab_env.id)
-        with AdvisoryLock(env_operation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as acquired:
+        with AdvisoryLock(
+            env_operation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+        ) as acquired:
             if not acquired:
-                raise TimeoutError(f"Could not acquire lock for starting environment {lab_env.id}")
+                raise TimeoutError(
+                    f"Could not acquire lock for starting environment {lab_env.id}"
+                )
 
             try:
-                lab_env.status = 'starting'
+                lab_env.status = "starting"
                 lab_env.save()
                 with transaction.atomic():
                     for vm in lab_env.virtual_machines.select_for_update().all():
-                        if vm.status != 'running':
+                        if vm.status != "running":
                             # Start the VM
                             node = self.get_vm_node(vm.vmid)
                             self.proxmox.nodes(node).qemu(vm.vmid).status.start.post()
-                            vm.status = 'running'
+                            vm.status = "running"
                             vm.save()
                     # Update lab environment status
-                    if lab_env.status != 'active':
-                        lab_env.status = 'active'
+                    if lab_env.status != "active":
+                        lab_env.status = "active"
                         lab_env.stopped_at = None
                         lab_env.last_seen_at = timezone.now()
                         lab_env.save()
@@ -211,55 +230,61 @@ class ProxmoxManager(ProxmoxClient):
         Stops all VMs inside a lab environment
         """
         env_operation_lock = self._get_lab_env_lock_name(lab_env.id)
-        with AdvisoryLock(env_operation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as acquired:
+        with AdvisoryLock(
+            env_operation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+        ) as acquired:
             if not acquired:
-                raise TimeoutError(f"Could not acquire lock for stopping environment {lab_env.id}")
+                raise TimeoutError(
+                    f"Could not acquire lock for stopping environment {lab_env.id}"
+                )
 
             try:
                 lab_env.refresh_from_db()
-                if lab_env.status == 'stopped':
+                if lab_env.status == "stopped":
                     return False
 
-                lab_env.status = 'stopping'
+                lab_env.status = "stopping"
                 lab_env.save()
 
                 with transaction.atomic():
                     for vm in lab_env.virtual_machines.select_for_update().all():
-                        if vm.status == 'running':
+                        if vm.status == "running":
                             # Stop the VM
                             node = self.get_vm_node(vm.vmid)
                             self.proxmox.nodes(node).qemu(vm.vmid).status.stop.post()
                             # Update VM status
-                            vm.status = 'stopped'
+                            vm.status = "stopped"
                             vm.save()
 
                     current_time = timezone.now()
                     update_fields = []
 
-                    if lab_env.status != 'stopped':
-                        lab_env.status = 'stopped'
-                        update_fields.append('status')
+                    if lab_env.status != "stopped":
+                        lab_env.status = "stopped"
+                        update_fields.append("status")
 
                     if lab_env.stopped_at is None:
                         lab_env.stopped_at = current_time
                         lab_env.last_seen_at = current_time
-                        update_fields.extend(['stopped_at', 'last_seen_at'])
+                        update_fields.extend(["stopped_at", "last_seen_at"])
 
                     if update_fields:
                         lab_env.save(update_fields=update_fields)
                 return True
             except Exception:
                 logger.exception("Error stopping lab environment env_id=%s", lab_env.id)
-                if lab_env.status == 'stopping':
-                    lab_env.status = 'degraded'
-                    lab_env.save(update_fields=['status'])
+                if lab_env.status == "stopping":
+                    lab_env.status = "degraded"
+                    lab_env.save(update_fields=["status"])
                 raise
 
     def cleanup_environment(self, user, task):
         """
         Deletes all VMs and the network of a lab environment for a given user and task. Then deletes the lab environment.
         """
-        existing_env = LabEnvironment.objects.filter(user=user, task=task).only('id').first()
+        existing_env = (
+            LabEnvironment.objects.filter(user=user, task=task).only("id").first()
+        )
         if not existing_env:
             logger.info(
                 "No lab environment found for cleanup user_id=%s task_id=%s",
@@ -269,7 +294,9 @@ class ProxmoxManager(ProxmoxClient):
             return "not_found"
 
         env_operation_lock = self._get_lab_env_lock_name(existing_env.id)
-        with AdvisoryLock(env_operation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as acquired:
+        with AdvisoryLock(
+            env_operation_lock, timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+        ) as acquired:
             if not acquired:
                 logger.warning(
                     "Could not acquire lock for cleanup user_id=%s task_id=%s",
@@ -289,8 +316,8 @@ class ProxmoxManager(ProxmoxClient):
                     )
                     return "not_found"
                 # Mark environment as being cleaned up
-                if lab_env.status != 'cleanup':
-                    lab_env.status = 'cleanup'
+                if lab_env.status != "cleanup":
+                    lab_env.status = "cleanup"
                     lab_env.save()
                 # Delete all VMs
                 for vm in lab_env.virtual_machines.all():
@@ -340,12 +367,14 @@ class ProxmoxManager(ProxmoxClient):
                     task.id,
                 )
                 try:
-                    lab_env = LabEnvironment.objects.filter(user=user, task=task).first()
-                    if lab_env and lab_env.status == 'cleanup':
-                        lab_env.status = 'stopped'
+                    lab_env = LabEnvironment.objects.filter(
+                        user=user, task=task
+                    ).first()
+                    if lab_env and lab_env.status == "cleanup":
+                        lab_env.status = "stopped"
                         if lab_env.stopped_at is None:
                             lab_env.stopped_at = timezone.now()
-                        lab_env.save(update_fields=['status', 'stopped_at'])
+                        lab_env.save(update_fields=["status", "stopped_at"])
                 finally:
                     self.cleanup_orphans()
                 return "failed"
@@ -355,17 +384,20 @@ class ProxmoxManager(ProxmoxClient):
         Searches for orphan VMs in Proxmox that have no matching database record and deletes them.
         Bridge cleanup is omitted – pool bridges are never deleted by TURTL.
         """
-        with AdvisoryLock("proxmox-cleanup", timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as acquired:
+        with AdvisoryLock(
+            "proxmox-cleanup", timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+        ) as acquired:
             if not acquired:
                 return
 
             # check if vm creation is ongoing, if yes do not cleanup
-            with AdvisoryLock("proxmox_vm_creation", timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT) as vm_lock_acquired:
-
+            with AdvisoryLock(
+                "proxmox_vm_creation", timeout_seconds=self.LOCK_ACQUIRE_TIMEOUT
+            ) as vm_lock_acquired:
                 if not vm_lock_acquired:
                     return
 
-                pool = os.environ.get('PROXMOX_VM_POOL')
+                pool = os.environ.get("PROXMOX_VM_POOL")
 
                 if not pool:
                     logger.warning("PROXMOX_VM_POOL not set, skipping orphan cleanup")
@@ -373,29 +405,48 @@ class ProxmoxManager(ProxmoxClient):
 
                 try:
                     pool_data = self.proxmox.pools(pool).get()
-                    resources = [m for m in pool_data.get('members', []) if m.get('type') == 'qemu']
+                    resources = [
+                        m
+                        for m in pool_data.get("members", [])
+                        if m.get("type") == "qemu"
+                    ]
                 except Exception:
-                    logger.exception("Could not fetch pool '%s', skipping orphan cleanup", pool)
+                    logger.exception(
+                        "Could not fetch pool '%s', skipping orphan cleanup", pool
+                    )
                     return
 
                 for r in resources:
-                    name = r.get('name', '')
-                    vmid = int(r.get('vmid'))
+                    name = r.get("name", "")
+                    vmid = int(r.get("vmid"))
 
                     if not VirtualMachine.objects.filter(vmid=vmid).exists():
-                        logger.info("Found orphan VM in pool=%s vmid=%s name=%s, deleting", pool, vmid, name)
+                        logger.info(
+                            "Found orphan VM in pool=%s vmid=%s name=%s, deleting",
+                            pool,
+                            vmid,
+                            name,
+                        )
                         try:
-                            node = r.get('node') or self.get_vm_node(vmid)
+                            node = r.get("node") or self.get_vm_node(vmid)
                             self.proxmox.nodes(node).qemu(vmid).status.stop.post()
                             wait_for_vm_stopped(self.proxmox, node, vmid)
                             self.proxmox.nodes(node).qemu(vmid).delete()
                         except Exception:
-                            logger.warning("Could not delete orphan VM vmid=%s", vmid, exc_info=True)
+                            logger.warning(
+                                "Could not delete orphan VM vmid=%s",
+                                vmid,
+                                exc_info=True,
+                            )
 
                 # Clean up orphan networks (without lab environment)
                 orphan_networks = Network.objects.filter(lab_environments=None)
                 for network in orphan_networks:
-                    logger.info("Deleting orphan network id=%s name=%s", network.id, network.name)
+                    logger.info(
+                        "Deleting orphan network id=%s name=%s",
+                        network.id,
+                        network.name,
+                    )
                     network.delete()
 
     def sync_vm_status(self, lab_env):
@@ -405,7 +456,10 @@ class ProxmoxManager(ProxmoxClient):
         env_operation_lock = self._get_lab_env_lock_name(lab_env.id)
         with AdvisoryLock(env_operation_lock, timeout_seconds=0) as acquired:
             if not acquired:
-                logger.debug("Skipping VM status sync because environment is busy env_id=%s", lab_env.id)
+                logger.debug(
+                    "Skipping VM status sync because environment is busy env_id=%s",
+                    lab_env.id,
+                )
                 return
 
             try:
@@ -417,15 +471,20 @@ class ProxmoxManager(ProxmoxClient):
                     any_vm = True
                     try:
                         node = self.get_vm_node(vm.vmid)
-                        vm_status = self.proxmox.nodes(node).qemu(vm.vmid).status.current.get().get('status')
+                        vm_status = (
+                            self.proxmox.nodes(node)
+                            .qemu(vm.vmid)
+                            .status.current.get()
+                            .get("status")
+                        )
 
                         if vm.status != vm_status:
                             vm.status = vm_status
                             vm.save()
 
-                        if vm_status != 'running':
+                        if vm_status != "running":
                             all_running = False
-                        if vm_status != 'stopped':
+                        if vm_status != "stopped":
                             all_stopped = False
                     except Exception:
                         logger.warning(
@@ -439,21 +498,23 @@ class ProxmoxManager(ProxmoxClient):
 
                 if any_vm:
                     if all_running:
-                        if lab_env.status != 'active' or lab_env.stopped_at is not None:
-                            lab_env.status = 'active'
+                        if lab_env.status != "active" or lab_env.stopped_at is not None:
+                            lab_env.status = "active"
                             lab_env.stopped_at = None
                             lab_env.last_seen_at = timezone.now()
-                            lab_env.save(update_fields=['status', 'stopped_at', 'last_seen_at'])
+                            lab_env.save(
+                                update_fields=["status", "stopped_at", "last_seen_at"]
+                            )
                         return
 
                     if not all_stopped:
                         update_fields = []
-                        if lab_env.status != 'degraded':
-                            lab_env.status = 'degraded'
-                            update_fields.append('status')
+                        if lab_env.status != "degraded":
+                            lab_env.status = "degraded"
+                            update_fields.append("status")
                         if lab_env.stopped_at is not None:
                             lab_env.stopped_at = None
-                            update_fields.append('stopped_at')
+                            update_fields.append("stopped_at")
                         if update_fields:
                             lab_env.save(update_fields=update_fields)
                         logger.info(
@@ -465,12 +526,12 @@ class ProxmoxManager(ProxmoxClient):
                         return
 
                     update_fields = []
-                    if lab_env.status != 'stopped':
-                        lab_env.status = 'stopped'
-                        update_fields.append('status')
+                    if lab_env.status != "stopped":
+                        lab_env.status = "stopped"
+                        update_fields.append("status")
                     if lab_env.stopped_at is None:
                         lab_env.stopped_at = timezone.now()
-                        update_fields.append('stopped_at')
+                        update_fields.append("stopped_at")
                     if update_fields:
                         lab_env.save(update_fields=update_fields)
 

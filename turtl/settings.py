@@ -22,86 +22,86 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
-DEBUG = os.environ.get('DJANGO_DEBUG', '').strip().lower() in ('1', 'true', 'yes', 'on')
+DEBUG = os.environ.get("DJANGO_DEBUG", "").strip().lower() in ("1", "true", "yes", "on")
 
-allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '')
-ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+allowed_hosts_env = os.getenv("DJANGO_ALLOWED_HOSTS", "")
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(",") if h.strip()]
 
-csrf_trusted_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_trusted_origins_env.split(',') if o.strip()]
+csrf_trusted_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in csrf_trusted_origins_env.split(",") if o.strip()
+]
 
 # Tell Django about the custom `User` model we created. The string
 # `authentication.User` tells Django we are referring to the `User` model in
 # the `authentication` module. This module is registered above in a setting
 # called `INSTALLED_APPS`.
-AUTH_USER_MODEL = 'authentication.User'
+AUTH_USER_MODEL = "authentication.User"
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_extensions',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'authentication',
-    'catalog',
-    'enrollments',
-    'seeder',
-    'shell',
-    'vm_manager',
-    'analytics',
+    "daphne",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_extensions",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "authentication",
+    "catalog",
+    "enrollments",
+    "seeder",
+    "shell",
+    "vm_manager",
+    "analytics",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 # CORS: only enabled in DEBUG (dev). Prod runs same-origin behind nginx.
 if DEBUG:
-    INSTALLED_APPS.append('corsheaders')
-    MIDDLEWARE.insert(2, 'corsheaders.middleware.CorsMiddleware')
-    cors_env = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-    CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_env.split(',') if o.strip()]
+    INSTALLED_APPS.append("corsheaders")
+    MIDDLEWARE.insert(2, "corsheaders.middleware.CorsMiddleware")
+    cors_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_env.split(",") if o.strip()]
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'turtl.exceptions.core_exception_handler',
-    'NON_FIELD_ERRORS_KEY': 'error',
-
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+    "EXCEPTION_HANDLER": "turtl.exceptions.core_exception_handler",
+    "NON_FIELD_ERRORS_KEY": "error",
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
     ],
-
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.UserRateThrottle',
-        'rest_framework.throttling.AnonRateThrottle',
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'user': os.environ.get('USER_THROTTLE_RATE', '200/minute'),
-        'anon': os.environ.get('ANON_THROTTLE_RATE', '100/minute'),
-        'vm_actions': os.environ.get('VM_ACTIONS_THROTTLE_RATE', '5/minute'),
-        'login_ip': os.environ.get('LOGIN_IP_THROTTLE_RATE', '100/minute'),
-        'login_user': os.environ.get('LOGIN_USER_THROTTLE_RATE', '10/minute'),
+    "DEFAULT_THROTTLE_RATES": {
+        "user": os.environ.get("USER_THROTTLE_RATE", "200/minute"),
+        "anon": os.environ.get("ANON_THROTTLE_RATE", "100/minute"),
+        "vm_actions": os.environ.get("VM_ACTIONS_THROTTLE_RATE", "5/minute"),
+        "login_ip": os.environ.get("LOGIN_IP_THROTTLE_RATE", "100/minute"),
+        "login_user": os.environ.get("LOGIN_USER_THROTTLE_RATE", "10/minute"),
     },
-    'NUM_PROXIES': int(os.environ.get('NUMBER_OF_PROXIES', 1)),
+    "NUM_PROXIES": int(os.environ.get("NUMBER_OF_PROXIES", 1)),
 }
 
 SIMPLE_JWT = {
@@ -114,31 +114,33 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-ROOT_URLCONF = 'turtl.urls'
+ROOT_URLCONF = "turtl.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'turtl.wsgi.application'
+WSGI_APPLICATION = "turtl.wsgi.application"
 ASGI_APPLICATION = "turtl.asgi.application"
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [f"redis://:{quote(os.environ['REDIS_PASSWORD'], safe='')}@{os.environ.get('REDIS_HOST', 'localhost')}:{os.environ.get('REDIS_PORT', '6379')}/0"],
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                f"redis://:{quote(os.environ['REDIS_PASSWORD'], safe='')}@{os.environ.get('REDIS_HOST', 'localhost')}:{os.environ.get('REDIS_PORT', '6379')}/0"
+            ],
         },
     },
 }
@@ -154,14 +156,14 @@ CACHES = {
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 # PostgreSQL configuration
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-        'CONN_MAX_AGE': 60,
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB"),
+        "USER": os.environ.get("POSTGRES_USER"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
+        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 60,
     }
 }
 
@@ -171,30 +173,31 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
-AUTHENTICATION_BACKENDS = ('rules.permissions.ObjectPermissionBackend',
-                           'django.contrib.auth.backends.ModelBackend'
-                           )
+AUTHENTICATION_BACKENDS = (
+    "rules.permissions.ObjectPermissionBackend",
+    "django.contrib.auth.backends.ModelBackend",
+)
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -206,28 +209,27 @@ USE_TZ = True
 # Static files (CSS, JavaScript, images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # File upload
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Production ssl settings
 if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_NAME = '__Host-sessionid'
+    SESSION_COOKIE_NAME = "__Host-sessionid"
     CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_NAME = '__Host-csrftoken'
+    CSRF_COOKIE_NAME = "__Host-csrftoken"
 
 
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 # No. of days for which invitation links sent via the email invitation system are valid
 INVITATION_EXPIRY_DAYS = 14
@@ -241,7 +243,7 @@ EMAIL_HOST_PASSWORD = ""
 EMAIL_USE_SSL = True
 
 
-VM_MANAGER_LOG_LEVEL = os.environ.get('VM_MANAGER_LOG_LEVEL', 'INFO').strip().upper()
+VM_MANAGER_LOG_LEVEL = os.environ.get("VM_MANAGER_LOG_LEVEL", "INFO").strip().upper()
 
 LOGGING = {
     "version": 1,

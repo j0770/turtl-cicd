@@ -36,3 +36,4 @@ TURTL aims to:
 - [Backend](docs/development/backend.md)
 - [Frontend](docs/development/frontend.md)
 - [Authentication](docs/development/authentication.md)
+- [CI-Prüfungen und Auswertung](docs/development/ci.md)

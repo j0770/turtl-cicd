@@ -83,7 +83,9 @@ export const useUserStore = defineStore('user', () => {
       } else {
         await doRefresh()
       }
-    })().finally(() => { refreshPromise = null })
+    })().finally(() => {
+      refreshPromise = null
+    })
     return refreshPromise
   }
 

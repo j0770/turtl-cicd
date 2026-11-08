@@ -10,7 +10,13 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from authentication.models import User
-from catalog.models import Classroom, ClassroomInstructor, Project, Task, AcceptanceCriteria
+from catalog.models import (
+    Classroom,
+    ClassroomInstructor,
+    Project,
+    Task,
+    AcceptanceCriteria,
+)
 from enrollments.models import Enrollment
 from .models import (
     Network,
@@ -61,8 +67,7 @@ class VMManagerModelsTest(TestCase):
         )
 
         cls.task_config = TaskVMConfiguration.objects.create(
-            task=cls.task,
-            network_template=cls.network_template
+            task=cls.task, network_template=cls.network_template
         )
 
         cls.task_vm_template = TaskVMTemplate.objects.create(
@@ -145,7 +150,9 @@ class VMManagerModelsTest(TestCase):
         # Student is not enrolled by default
         self.assertFalse(user_can_access_task_vm(self.user, self.task))
 
-        Enrollment.objects.create(classroom=self.task.project.classroom, student=self.user)
+        Enrollment.objects.create(
+            classroom=self.task.project.classroom, student=self.user
+        )
         self.assertTrue(user_can_access_task_vm(self.user, self.task))
 
 
@@ -157,9 +164,11 @@ class AdvisoryLockBehaviorTest(TestCase):
         cursor_context.__enter__.return_value = cursor
         cursor_context.__exit__.return_value = False
 
-        with patch("vm_manager.utils.connection.cursor", return_value=cursor_context), \
-             patch("vm_manager.utils.time.monotonic", side_effect=[0.0, 0.0, 1.0]), \
-             patch("vm_manager.utils.time.sleep"):
+        with (
+            patch("vm_manager.utils.connection.cursor", return_value=cursor_context),
+            patch("vm_manager.utils.time.monotonic", side_effect=[0.0, 0.0, 1.0]),
+            patch("vm_manager.utils.time.sleep"),
+        ):
             with AdvisoryLock("busy-lock", timeout_seconds=0.1) as acquired:
                 self.assertFalse(acquired)
 
@@ -187,7 +196,9 @@ class StartEnvironmentViewTest(TestCase):
             name="Test Network Template",
             subnet="10.0.0.0/24",
         )
-        TaskVMConfiguration.objects.create(task=cls.task, network_template=network_template)
+        TaskVMConfiguration.objects.create(
+            task=cls.task, network_template=network_template
+        )
         Enrollment.objects.create(classroom=classroom, student=cls.user)
 
     def setUp(self):
@@ -197,7 +208,9 @@ class StartEnvironmentViewTest(TestCase):
 
     def test_no_vlan_available_returns_503_with_error_code(self):
         with patch("vm_manager.views.ProxmoxManager") as manager_cls:
-            manager_cls.return_value.create_lab_environment.side_effect = NoVlanAvailableError()
+            manager_cls.return_value.create_lab_environment.side_effect = (
+                NoVlanAvailableError()
+            )
             response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -205,7 +218,9 @@ class StartEnvironmentViewTest(TestCase):
 
     def test_unexpected_exception_returns_500(self):
         with patch("vm_manager.views.ProxmoxManager") as manager_cls:
-            manager_cls.return_value.create_lab_environment.side_effect = RuntimeError("boom test")
+            manager_cls.return_value.create_lab_environment.side_effect = RuntimeError(
+                "boom test"
+            )
             response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -216,7 +231,10 @@ class StartEnvironmentViewTest(TestCase):
         self.addCleanup(cache.clear)
 
         with patch("vm_manager.views.ProxmoxManager") as manager_cls:
-            manager_cls.return_value.create_lab_environment.return_value = (SimpleNamespace(id=1), True)
+            manager_cls.return_value.create_lab_environment.return_value = (
+                SimpleNamespace(id=1),
+                True,
+            )
 
             for _ in range(5):
                 ok_response = self.client.post(self.url)
@@ -224,20 +242,26 @@ class StartEnvironmentViewTest(TestCase):
 
             throttled_response = self.client.post(self.url)
 
-        self.assertEqual(throttled_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(
+            throttled_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS
+        )
         self.assertIn("throttled", throttled_response.data.get("detail", "").lower())
 
 
 class ProxmoxManagerLockingTest(TestCase):
     def test_sync_vm_status_skips_when_environment_lock_is_busy(self):
         manager = ProxmoxManager.__new__(ProxmoxManager)
-        manager.get_node = Mock(side_effect=AssertionError("get_node must not be called"))
+        manager.get_node = Mock(
+            side_effect=AssertionError("get_node must not be called")
+        )
 
         lock_context = MagicMock()
         lock_context.__enter__.return_value = False
         lock_context.__exit__.return_value = False
 
-        with patch("vm_manager.proxmox.orchestrator.AdvisoryLock", return_value=lock_context) as lock_cls:
+        with patch(
+            "vm_manager.proxmox.orchestrator.AdvisoryLock", return_value=lock_context
+        ) as lock_cls:
             manager.sync_vm_status(SimpleNamespace(id=42))
 
         lock_cls.assert_called_once_with("lab_env_operation_42", timeout_seconds=0)

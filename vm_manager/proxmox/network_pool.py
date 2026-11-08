@@ -19,7 +19,7 @@ def _next_free_vlan_id():
     Returns the lowest VLAN tag in the configured range that is not
     currently used by any Network record.
     """
-    used = set(Network.objects.values_list('vlan_id', flat=True))
+    used = set(Network.objects.values_list("vlan_id", flat=True))
     for tag in range(VLAN_TAG_MIN, VLAN_TAG_MAX + 1):
         if tag not in used:
             return tag
@@ -45,7 +45,9 @@ def provision_network(user, task, task_config):
         with transaction.atomic():
             vlan_id = _next_free_vlan_id()
             if vlan_id is None:
-                raise NoVlanAvailableError("No VLAN tags available in configured range.")
+                raise NoVlanAvailableError(
+                    "No VLAN tags available in configured range."
+                )
 
             network_name = f"{slugify(task.title)}-{slugify(user.username)}-net"
 
@@ -55,7 +57,7 @@ def provision_network(user, task, task_config):
                 vlan_id=vlan_id,
                 template=network_template,
                 user=user,
-                task=task
+                task=task,
             )
 
             logger.info(

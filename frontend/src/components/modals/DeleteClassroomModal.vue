@@ -4,7 +4,7 @@ import TextButton from '@/components/buttons/TextButton.vue'
 import { useCatalogStore } from '@/stores/CatalogStore'
 import { ref, toRef } from 'vue'
 import { useRouter } from 'vue-router'
-import {useToast} from "vue-toastification";
+import { useToast } from 'vue-toastification'
 
 const props = defineProps<{ classroomId: number }>()
 const showDialog = ref(false)
@@ -17,12 +17,15 @@ let classroom = toRef(catalogStore, 'classroom')
 catalogStore.getClassroom(props.classroomId)
 
 async function deleteClassroom() {
-  catalogStore.deleteClassroom(props.classroomId).then(() => {
-    toast.info("Classroom deleted")
-    router.push({ name: 'InstructorMyClassrooms' })
-  }).catch((e) => {
-    toast.error(e.message)
-  })
+  catalogStore
+    .deleteClassroom(props.classroomId)
+    .then(() => {
+      toast.info('Classroom deleted')
+      router.push({ name: 'InstructorMyClassrooms' })
+    })
+    .catch((e) => {
+      toast.error(e.message)
+    })
 }
 </script>
 

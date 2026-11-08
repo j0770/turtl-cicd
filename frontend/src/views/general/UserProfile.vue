@@ -7,44 +7,56 @@ import { useUserStore } from '@/stores/UserStore'
 import { toTypedSchema } from '@vee-validate/yup'
 import { useField, useForm } from 'vee-validate'
 import * as yup from 'yup'
-import {useToast} from "vue-toastification";
+import { useToast } from 'vue-toastification'
 
 const userStore = useUserStore()
 const toast = useToast()
 
 const schema = toTypedSchema(
   yup.object({
-    username: yup.string().nullable().test('checkLengthOptional', 'Username needs to be between 2 and 255 characters long',
+    username: yup
+      .string()
+      .nullable()
+      .test(
+        'checkLengthOptional',
+        'Username needs to be between 2 and 255 characters long',
         (value) => {
           // If there is a value, we want to make sure it more than 2 and less than 255
-          if(value) {
+          if (value) {
             return value.trim().length >= 2 && value.trim().length <= 255
           }
-          return true;
-        }),
-    newPassword: yup.string().test('checkLengthOptional', 'Password needs to be 8 characters long',
-        (value) => {
-          // If there is a value, i.e. if the password should be updated, it has to be greater than 8
-          if(value) {
-            return value.length >= 8
-          }
-          return true;
-        }).oneOf([yup.ref('newPasswordValidate')], 'Passwords need to be the same'),
+          return true
+        }
+      ),
+    newPassword: yup
+      .string()
+      .test('checkLengthOptional', 'Password needs to be 8 characters long', (value) => {
+        // If there is a value, i.e. if the password should be updated, it has to be greater than 8
+        if (value) {
+          return value.length >= 8
+        }
+        return true
+      })
+      .oneOf([yup.ref('newPasswordValidate')], 'Passwords need to be the same'),
     newPasswordValidate: yup.string().when('newPassword', (newPassword, field) => {
       // When a new password is provided, validate the field. Otherwise it can remain empty
-      if(newPassword[0]) {
+      if (newPassword[0]) {
         return field
-            .required('This field is required when updating your password')
-            .min(8, 'Password needs to be 8 characters long')
-            .oneOf([yup.ref('newPassword')], 'Passwords need to be the same')
+          .required('This field is required when updating your password')
+          .min(8, 'Password needs to be 8 characters long')
+          .oneOf([yup.ref('newPassword')], 'Passwords need to be the same')
       }
       return field
     }),
-    oldPassword: yup.string().when( 'newPassword', (newPassword, field) =>
-      newPassword[0] ? field.required('This field is required when updating your password') : field
-    )
-  }
-))
+    oldPassword: yup
+      .string()
+      .when('newPassword', (newPassword, field) =>
+        newPassword[0]
+          ? field.required('This field is required when updating your password')
+          : field
+      )
+  })
+)
 
 const { handleSubmit } = useForm({ validationSchema: schema })
 
@@ -53,7 +65,7 @@ const { value: username, errorMessage: usernameError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (userStore.user?.username) ? userStore.user?.username : ''
+    initialValue: userStore.user?.username ? userStore.user?.username : ''
   }
 )
 
@@ -74,29 +86,36 @@ const submit = handleSubmit(async (values, { setFieldValue }) => {
   // We only want to provide the values that the user actually filled in
   let data = {}
 
-  if('username' in values) {
+  if ('username' in values) {
     // If the username is empty, we have to send username: null to the API. Empty strings are not allowed.
-    if(values.username === '') {
-      data = Object.assign(data, {username: null})
+    if (values.username === '') {
+      data = Object.assign(data, { username: null })
     } else {
-      data = Object.assign(data, {username: values.username?.trim() })
+      data = Object.assign(data, { username: values.username?.trim() })
     }
   }
   // If these fields are present, the password should be updated
-  if('oldPassword' in values && 'newPassword' in values && 'newPasswordValidate' in values && newPassword.value) {
+  if (
+    'oldPassword' in values &&
+    'newPassword' in values &&
+    'newPasswordValidate' in values &&
+    newPassword.value
+  ) {
     data = Object.assign(data, {
       current_password: values.oldPassword,
       new_password: values.newPassword
     })
   }
 
-  makeAPIRequest('/users/profile', 'PUT', true, true, data).then(() => {
-    // If the request was successful, we need to refresh the login data to get the updated token claims (e.g. username)
-    userStore.refreshLogin()
-    toast.success("Your changes have been saved.")
-  }).catch((e) => {
-    toast.error(e.message)
-  })
+  makeAPIRequest('/users/profile', 'PUT', true, true, data)
+    .then(() => {
+      // If the request was successful, we need to refresh the login data to get the updated token claims (e.g. username)
+      userStore.refreshLogin()
+      toast.success('Your changes have been saved.')
+    })
+    .catch((e) => {
+      toast.error(e.message)
+    })
 
   // Reset the password form
   setFieldValue('oldPassword', undefined)
@@ -125,9 +144,7 @@ const submit = handleSubmit(async (values, { setFieldValue }) => {
           base-color="primary"
           color="primary"
         ></v-text-field>
-        <small v-if="userStore.user?.username == null">
-          You did not set a username yet.
-        </small>
+        <small v-if="userStore.user?.username == null"> You did not set a username yet. </small>
         <small v-if="userStore.user?.username != null">
           Usernames are optional. To remove your username, simply clear the text box.
         </small>

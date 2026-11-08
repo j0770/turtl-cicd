@@ -63,7 +63,7 @@ function deleteHelpfulResource(id: number) {
   )
   catalogStore
     .updateClassroom(classroom.value.id, updatedClassroom)
-    .then(() => toast.info("Resource deleted"))
+    .then(() => toast.info('Resource deleted'))
     .catch((e) => toast.error(e.message))
 }
 
@@ -275,7 +275,9 @@ onMounted(async () => {
               ]"
               :items="classroom.instructors"
             >
-              <template #[`item.added_at`]="{ item }">{{ formatDate(item.added_at ?? '') }}</template>
+              <template #[`item.added_at`]="{ item }">{{
+                formatDate(item.added_at ?? '')
+              }}</template>
               <template #[`item.remove`]="{ item }">
                 <v-btn
                   icon="mdi-trash-can-outline"

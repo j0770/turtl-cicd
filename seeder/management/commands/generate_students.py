@@ -19,6 +19,7 @@ def valid_int(value):
         raise argparse.ArgumentTypeError(f"{value!r} must be >= 1")
     return ivalue
 
+
 ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
@@ -49,7 +50,9 @@ class Command(BaseCommand):
             raise CommandError(f"Classroom {options['classroom_id']} does not exist.")
 
         created = []
-        users = User.objects.filter(email__startswith="student-", email__endswith=f"@{options['domain']}").values_list("email", flat=True)
+        users = User.objects.filter(
+            email__startswith="student-", email__endswith=f"@{options['domain']}"
+        ).values_list("email", flat=True)
         max_number = max((int(e.split("-")[1].split("@")[0]) for e in users), default=0)
         with transaction.atomic():
             for i in range(count):
@@ -70,18 +73,18 @@ def render_html(users):
     cards = "\n".join(
         f'<div class="card">'
         f'<div class="tag">TURTL</div>'
-        f'<div>Email: <code>{email}</code></div>'
-        f'<div>Password: <code>{password}</code></div></div>'
+        f"<div>Email: <code>{email}</code></div>"
+        f"<div>Password: <code>{password}</code></div></div>"
         for email, password in users
     )
     return (
         '<!doctype html><meta charset="utf-8">'
-        '<style>'
-        '@page{size:A4;margin:10mm}'
-        '.sheet{display:grid;grid-template-columns:1fr 1fr}'
-        '.tag{font-size:10pt;font-weight:bold;margin-bottom:4mm}'
-        '.card{border:1px dashed #888;padding:6mm;min-height:30mm;page-break-inside:avoid;box-sizing:border-box;margin:-0.5px}'
-        'code{font-size:11pt}'
-        '</style>'
+        "<style>"
+        "@page{size:A4;margin:10mm}"
+        ".sheet{display:grid;grid-template-columns:1fr 1fr}"
+        ".tag{font-size:10pt;font-weight:bold;margin-bottom:4mm}"
+        ".card{border:1px dashed #888;padding:6mm;min-height:30mm;page-break-inside:avoid;box-sizing:border-box;margin:-0.5px}"
+        "code{font-size:11pt}"
+        "</style>"
         f'<div class="sheet">{cards}</div>'
     )

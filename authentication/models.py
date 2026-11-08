@@ -4,7 +4,9 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.models import (
-    AbstractBaseUser, BaseUserManager, PermissionsMixin
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
 )
 from django.db import models
 from django.utils import timezone
@@ -21,6 +23,7 @@ from authentication.predicates import is_instructor, issued_invitation
 # Changes to this file require a new migration.
 # Check out https://docs.djangoproject.com/en/3.1/topics/db/models/
 
+
 class UserManager(BaseUserManager):
     """
     Django requires that custom users define their own Manager class. By
@@ -35,10 +38,10 @@ class UserManager(BaseUserManager):
         """Create and return a `User` with an email and password."""
 
         if email is None:
-            raise TypeError('Users must have an email address.')
+            raise TypeError("Users must have an email address.")
 
         if password is None:
-            raise TypeError('Users must have a password.')
+            raise TypeError("Users must have a password.")
 
         user = self.model(email=self.normalize_email(email))
         user.set_password(password)
@@ -48,7 +51,7 @@ class UserManager(BaseUserManager):
 
     def create_student(self, email, password):
         """
-            create and return a student
+        create and return a student
         """
         user = self.create_user(email, password)
         user.role = user.Role.STUDENT
@@ -58,7 +61,7 @@ class UserManager(BaseUserManager):
 
     def create_instructor(self, email, password):
         """
-            create and return an instructor
+        create and return an instructor
         """
         user = self.create_user(email, password)
         user.role = user.Role.INSTRUCTOR
@@ -68,7 +71,7 @@ class UserManager(BaseUserManager):
 
     def create_administrator(self, email, password):
         """
-            create and return an administrator
+        create and return an administrator
         """
         user = self.create_user(email, password)
         user.role = user.Role.ADMINISTRATOR
@@ -106,9 +109,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Users can have three different roles within TURTL: administrator, instructor and student.
     class Role(models.TextChoices):
-        ADMINISTRATOR = 'ADMINISTRATOR', _('Administrator')
-        INSTRUCTOR = 'INSTRUCTOR', _('Instructor')
-        STUDENT = 'STUDENT', _('Student')
+        ADMINISTRATOR = "ADMINISTRATOR", _("Administrator")
+        INSTRUCTOR = "INSTRUCTOR", _("Instructor")
+        STUDENT = "STUDENT", _("Student")
 
     role = models.CharField(
         max_length=13,
@@ -149,7 +152,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # The `USERNAME_FIELD` property tells us which field we will use to log in.
     # In this case we want it to be the email field.
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
 
     # Tells Django that the UserManager class defined above should manage
     # objects of this type.
@@ -182,8 +185,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class InvitationManager(models.Manager):
     def _create_and_send_invitation(self, email: str, issuer: User):
-        if not issuer.has_perm('authentication.add_invitation'):
-            raise TypeError("Users must be Instructors or Administrators to invite others")
+        if not issuer.has_perm("authentication.add_invitation"):
+            raise TypeError(
+                "Users must be Instructors or Administrators to invite others"
+            )
         invitation = self.model(email=email, issuer=issuer)
         token = invitation.get_and_save_token()
         invitation.set_expiration_date()
@@ -208,6 +213,7 @@ class Invitation(RulesModel):
     """
     This model represents an invitation for a student or an instructor to join TURTL.
     """
+
     # The email of the invited person
     email = models.EmailField(unique=True, editable=False, blank=False)
 
@@ -237,7 +243,9 @@ class Invitation(RulesModel):
     token = models.CharField(max_length=128)
 
     def set_expiration_date(self) -> None:
-        self.expiration_date = timezone.now() + timedelta(days=settings.INVITATION_EXPIRY_DAYS)
+        self.expiration_date = timezone.now() + timedelta(
+            days=settings.INVITATION_EXPIRY_DAYS
+        )
 
     # An expiration date to avoid invitations that are infinitely valid
     expiration_date = models.DateTimeField()
@@ -247,18 +255,18 @@ class Invitation(RulesModel):
         return self.expiration_date < timezone.now()
 
     class TargetRole(models.TextChoices):
-        INSTRUCTOR = 'INSTRUCTOR', _('Instructor')
-        STUDENT = 'STUDENT', _('Student')
+        INSTRUCTOR = "INSTRUCTOR", _("Instructor")
+        STUDENT = "STUDENT", _("Student")
 
     # The role the newly invited user is going to have. Either Student or Instructor, you cannot invite administrators
     # directly.
     target_role = models.CharField(
-        max_length=10,
-        choices=TargetRole.choices,
-        default=TargetRole.STUDENT
+        max_length=10, choices=TargetRole.choices, default=TargetRole.STUDENT
     )
 
-    issuer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invitations', editable=False)
+    issuer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="invitations", editable=False
+    )
 
     objects = InvitationManager()
 
@@ -267,5 +275,5 @@ class Invitation(RulesModel):
             "add": is_authenticated & is_instructor,
             "view": is_authenticated & is_instructor,
             "change": is_authenticated & is_instructor & issued_invitation,
-            "delete": is_authenticated & is_instructor & issued_invitation
+            "delete": is_authenticated & is_instructor & issued_invitation,
         }

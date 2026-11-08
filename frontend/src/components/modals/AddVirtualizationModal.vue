@@ -24,7 +24,7 @@ const { value: name, errorMessage: nameError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentVirtualization) ? props.currentVirtualization.name : ''
+    initialValue: props.currentVirtualization ? props.currentVirtualization.name : ''
   }
 )
 
@@ -33,7 +33,7 @@ const { value: role, errorMessage: roleError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentVirtualization) ? props.currentVirtualization.virtualization_role : ''
+    initialValue: props.currentVirtualization ? props.currentVirtualization.virtualization_role : ''
   }
 )
 
@@ -42,7 +42,7 @@ const { value: dockerfile, errorMessage: dockerfileError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentVirtualization) ? props.currentVirtualization.dockerfile : ''
+    initialValue: props.currentVirtualization ? props.currentVirtualization.dockerfile : ''
   }
 )
 
@@ -64,13 +64,12 @@ function resetDialog() {
 
 const addVirtualization = handleSubmit((values) => {
   const virtualization = values as Virtualization
-  if(props.currentVirtualization) {
+  if (props.currentVirtualization) {
     virtualization.id = props.currentVirtualization.id
   }
   emits('virtualizationEditingCompleted', virtualization)
   resetDialog()
 })
-
 </script>
 
 <template>

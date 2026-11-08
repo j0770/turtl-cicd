@@ -16,15 +16,16 @@ from vm_manager.models import VirtualMachine
 
 logger = logging.getLogger("vm_manager.console")
 
+
 class VMConsoleConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.proxmox_ws = None
         self.forward_task = None
-    
+
     async def connect(self):
-        self.task_id = self.scope['url_route']['kwargs']['task_id']
-        self.user = self.scope['user']
+        self.task_id = self.scope["url_route"]["kwargs"]["task_id"]
+        self.user = self.scope["user"]
         self.user_group = None
 
         if not self.user.is_authenticated:
@@ -58,20 +59,22 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
             user_vm.vmid,
         )
 
-        requested = self.scope.get('subprotocols', []) or []
-        if 'binary' in requested:
-            selected = 'binary'
-        elif 'base64' in requested:
-            selected = 'base64'
+        requested = self.scope.get("subprotocols", []) or []
+        if "binary" in requested:
+            selected = "binary"
+        elif "base64" in requested:
+            selected = "base64"
         else:
             selected = None
 
-        max_connections = int(os.environ.get('WS_MAX_PARALLEL_PER_USER', '3'))
+        max_connections = int(os.environ.get("WS_MAX_PARALLEL_PER_USER", "3"))
         count = await self._incr_user_ws_count(self.user.id)
         if count > max_connections:
             logger.warning(
                 "WS connection limit exceeded user_id=%s count=%s max=%s",
-                self.user.id, count, max_connections,
+                self.user.id,
+                count,
+                max_connections,
             )
             await self._decr_user_ws_count(self.user.id)
             await self.accept(subprotocol=selected)
@@ -85,7 +88,7 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
         except BaseException:
             await self._decr_user_ws_count(self.user.id)
             raise
-        
+
         self._ws_count_incremented = True
         logger.debug(
             "Client WebSocket accepted user_id=%s task_id=%s subprotocol=%s",
@@ -93,7 +96,7 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
             self.task_id,
             selected,
         )
-        
+
         try:
             await self.connect_to_proxmox(user_vm)
         except Exception:
@@ -104,21 +107,23 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
                 user_vm.vmid,
             )
             await self.close()
-    
+
     async def connect_to_proxmox(self, user_vm):
         pm = ProxmoxManager()
-        
+
         ticket = None
         vnc_port = None
-        for proto in (self.scope.get('subprotocols', []) or []):
-            if isinstance(proto, str) and proto.startswith('vnc.'):
+        for proto in self.scope.get("subprotocols", []) or []:
+            if isinstance(proto, str) and proto.startswith("vnc."):
                 encoded = proto[4:]
                 try:
-                    padding = '=' * (-len(encoded) % 4)
-                    ticket = base64.urlsafe_b64decode((encoded + padding).encode('ascii')).decode('utf-8')
+                    padding = "=" * (-len(encoded) % 4)
+                    ticket = base64.urlsafe_b64decode(
+                        (encoded + padding).encode("ascii")
+                    ).decode("utf-8")
                 except Exception:
                     logger.warning("Invalid VNC ticket subprotocol payload")
-            elif isinstance(proto, str) and proto.startswith('vncport.'):
+            elif isinstance(proto, str) and proto.startswith("vncport."):
                 vnc_port = proto[8:]
 
         if not ticket or not vnc_port:
@@ -135,26 +140,28 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
             return
 
         # Parse PROXMOX_HOST to extract hostname without port
-        proxmox_host = os.environ.get('PROXMOX_HOST')
-        if proxmox_host and ':' in proxmox_host:
-            proxmox_host = proxmox_host.split(':')[0]
-        
+        proxmox_host = os.environ.get("PROXMOX_HOST")
+        if proxmox_host and ":" in proxmox_host:
+            proxmox_host = proxmox_host.split(":")[0]
+
         # URL encode the ticket
         encoded_ticket = urllib.parse.quote(ticket)
-        
+
         # Build WebSocket URL to Proxmox
         proxmox_url = f"wss://{proxmox_host}:8006/api2/json/nodes/{node}/qemu/{user_vm.vmid}/vncwebsocket"
         proxmox_url += f"?port={vnc_port}&vncticket={encoded_ticket}"
 
-        logger.debug("Connecting to Proxmox WebSocket vmid=%s node=%s", user_vm.vmid, node)
-        
-        # Setup SSL context 
-        ca_path = os.path.join('/run/secrets', 'proxmox-ca.pem')
-        verify_env = os.environ.get('PROXMOX_VERIFY_SSL', 'true').strip().lower()
+        logger.debug(
+            "Connecting to Proxmox WebSocket vmid=%s node=%s", user_vm.vmid, node
+        )
+
+        # Setup SSL context
+        ca_path = os.path.join("/run/secrets", "proxmox-ca.pem")
+        verify_env = os.environ.get("PROXMOX_VERIFY_SSL", "true").strip().lower()
         ssl_context = ssl.create_default_context()
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
-        
-        if verify_env in ('false', '0'):
+
+        if verify_env in ("false", "0"):
             logger.warning(
                 "SSL certificate verification is DISABLED for Proxmox WebSocket connections "
                 "because PROXMOX_VERIFY_SSL is set to '%s'. This configuration is insecure and "
@@ -169,7 +176,7 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
 
         if self._is_ip(proxmox_host):
             ssl_context.check_hostname = False
-        
+
         # Prepare API token authentication for WebSocket
         api_token = pm.get_api_token()
 
@@ -178,23 +185,32 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
             "Origin": f"https://{proxmox_host}:8006",
             "Host": f"{proxmox_host}:8006",
         }
-        
-        try:
 
-            verify_off = verify_env in ('false', '0')
+        try:
+            verify_off = verify_env in ("false", "0")
             self.proxmox_ws = await websockets.connect(
-                proxmox_url, 
+                proxmox_url,
                 ssl=ssl_context,
                 additional_headers=headers,
-                subprotocols=['binary'],
-                server_hostname=None if verify_off or self._is_ip(proxmox_host) else proxmox_host,
+                subprotocols=["binary"],
+                server_hostname=None
+                if verify_off or self._is_ip(proxmox_host)
+                else proxmox_host,
             )
-            logger.info("Successfully connected to Proxmox WebSocket vmid=%s node=%s", user_vm.vmid, node)
+            logger.info(
+                "Successfully connected to Proxmox WebSocket vmid=%s node=%s",
+                user_vm.vmid,
+                node,
+            )
         except Exception:
-            logger.exception("Failed to connect to Proxmox WebSocket vmid=%s node=%s", user_vm.vmid, node)
+            logger.exception(
+                "Failed to connect to Proxmox WebSocket vmid=%s node=%s",
+                user_vm.vmid,
+                node,
+            )
             await self.close()
             return
-        
+
         # Start forwarding
         self.forward_task = asyncio.create_task(self.forward_messages())
 
@@ -222,9 +238,9 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
             cache.decr(key)
         except ValueError:
             pass
-    
+
     async def disconnect(self, close_code):
-        if getattr(self, '_ws_count_incremented', False):
+        if getattr(self, "_ws_count_incremented", False):
             await self._decr_user_ws_count(self.user.id)
         if self.forward_task:
             self.forward_task.cancel()
@@ -246,7 +262,7 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
             getattr(self, "task_id", None),
         )
         await self.close(code=4401)
-    
+
     async def receive(self, text_data=None, bytes_data=None):
         # Forward to Proxmox
         if self.proxmox_ws:
@@ -261,7 +277,7 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
                     getattr(self.user, "id", None),
                     getattr(self, "task_id", None),
                 )
-    
+
     async def forward_messages(self):
         """Forward messages from Proxmox to client"""
         try:
@@ -294,19 +310,23 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
 
     async def get_user_vm(self):
         from asgiref.sync import sync_to_async
-        
+
         @sync_to_async
         def get_vm():
-            vm = VirtualMachine.objects.filter(
-                lab_environment__user=self.user,
-                lab_environment__task_id=self.task_id,
-                template__purpose='USER_SHELL'
-            ).select_related('lab_environment').first()
-            
+            vm = (
+                VirtualMachine.objects.filter(
+                    lab_environment__user=self.user,
+                    lab_environment__task_id=self.task_id,
+                    template__purpose="USER_SHELL",
+                )
+                .select_related("lab_environment")
+                .first()
+            )
+
             if vm:
                 logger.debug("Found USER_SHELL VM vm_name=%s vmid=%s", vm.name, vm.vmid)
             return vm
-        
+
         return await get_vm()
 
     async def can_access_task_vm(self):
@@ -314,7 +334,11 @@ class VMConsoleConsumer(AsyncWebsocketConsumer):
 
         @sync_to_async
         def can_access():
-            task = Task.objects.select_related('project__classroom').filter(id=self.task_id).first()
+            task = (
+                Task.objects.select_related("project__classroom")
+                .filter(id=self.task_id)
+                .first()
+            )
             if not task:
                 return False
             return user_can_access_task_vm(self.user, task)

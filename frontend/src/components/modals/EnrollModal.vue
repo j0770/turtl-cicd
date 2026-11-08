@@ -25,7 +25,7 @@ async function enroll(id: number) {
   try {
     const enrollment = await enrollmentStore.enroll(id)
     toast.success(`You have enrolled in the classroom ‘${props.title}’.`)
-    await router.push({ name: 'StudentClassroom', params: { enrollmentId: enrollment.id }})
+    await router.push({ name: 'StudentClassroom', params: { enrollmentId: enrollment.id } })
     showDialog.value = false
   } catch (e: any) {
     toast.error(e.message)

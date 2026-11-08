@@ -27,12 +27,21 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 WORKDIR /app 
 
-COPY --chown=root:root --chmod=755 . .
+COPY --chown=root:root --chmod=755 analytics/ ./analytics/
+COPY --chown=root:root --chmod=755 authentication/ ./authentication/
+COPY --chown=root:root --chmod=755 catalog/ ./catalog/
+COPY --chown=root:root --chmod=755 enrollments/ ./enrollments/
+COPY --chown=root:root --chmod=755 seeder/ ./seeder/
+COPY --chown=root:root --chmod=755 shell/ ./shell/
+COPY --chown=root:root --chmod=755 turtl/ ./turtl/
+COPY --chown=root:root --chmod=755 vm_manager/ ./vm_manager/
+COPY --chown=root:root --chmod=755 manage.py ./manage.py
 
 RUN mkdir -p /app/staticfiles /app/media \
 && chown -R appuser:appuser /app/staticfiles /app/media
 
-RUN apt-get update && apt-get install --no-install-recommends -y curl
+RUN apt-get update && apt-get install --no-install-recommends -y curl \
+    && rm -rf /var/lib/apt/lists/*
 # Envs to optimize python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

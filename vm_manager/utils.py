@@ -4,17 +4,25 @@ import unicodedata
 import time
 from django.db import connection, utils
 
+
 def _get_lock_id(name: str) -> int:
     """
     Generate a lock ID based on a string that can be used by postgres
     """
     return int(hashlib.sha256(name.encode()).hexdigest(), 16) % (2**63)
 
+
 class AdvisoryLock:
     """
     Context manager for advisory locks with timeouts in PostgreSQL
     """
-    def __init__(self, name: str, timeout_seconds: float | None = None, poll_interval: float = 0.2):
+
+    def __init__(
+        self,
+        name: str,
+        timeout_seconds: float | None = None,
+        poll_interval: float = 0.2,
+    ):
         self.lock_id = _get_lock_id(name)
         self.timeout_seconds = timeout_seconds
         self.poll_interval = max(0.05, float(poll_interval))
@@ -47,7 +55,8 @@ class AdvisoryLock:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT pg_advisory_unlock(%s);", [self.lock_id])
             self.acquired = False
-            
+
+
 def slugify(value, max_length=40):
     """
     Cleans string so it is valid to use in proxmox names
@@ -62,13 +71,13 @@ def slugify(value, max_length=40):
     # ensure starts with letter
     if value and not value[0].isalpha():
         value = "n" + value
-    
+
     # Truncate and ensure valid ending
     if max_length and len(value) > max_length:
         value = value[:max_length].rstrip("-")
         if not value or len(value) < 2:
             return "default"
-        
+
     return value
 
 
@@ -82,7 +91,7 @@ def format_ip(ip_address, network):
     if "/" in ip_str:
         return ip_str
 
-    subnet = getattr(network, 'subnet', None) or ""
+    subnet = getattr(network, "subnet", None) or ""
     if "/" in subnet:
         cidr = subnet.split("/")[1]
         return f"{ip_str}/{cidr}"

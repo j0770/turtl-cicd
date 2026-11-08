@@ -1,0 +1,220 @@
+name: Container delivery
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, codex/ci-validierung-2026-11-03]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and SBOM (${{ matrix.component }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [frontend, backend]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.12"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Install evidence validator
+        run: python -m pip install jsonschema==4.25.1
+      - name: Test offline CycloneDX validation
+        run: python -m unittest discover -s scripts -p test_container_evidence.py -v
+      - name: Record build timestamp
+        id: clock
+        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+      - name: Build once for the runner platform
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/${{ matrix.component }}/${{ matrix.component }}.Dockerfile
+          load: true
+          push: false
+          provenance: false
+          platforms: linux/amd64
+          tags: turtl-${{ matrix.component }}:build
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.title=TURTL ${{ matrix.component }}
+            org.opencontainers.image.description=TURTL image for controlled private delivery
+            org.opencontainers.image.created=${{ steps.clock.outputs.created }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=container-${{ matrix.component }}
+          cache-to: type=gha,scope=container-${{ matrix.component }},mode=max
+      - name: Smoke-check backend packaging
+        if: matrix.component == 'backend'
+        run: |
+          docker run --rm turtl-backend:build python -c "import django,daphne,proxmoxer; from pathlib import Path; assert Path('/app/manage.py').is_file(); assert not Path('/app/.env').exists(); assert not Path('/app/frontend').exists(); print('Backend imports and packaging checks passed')"
+          docker run --rm turtl-backend:build daphne --help > backend-daphne-help.txt
+      - name: Smoke-check frontend HTTPS and SPA entry
+        if: matrix.component == 'frontend'
+        run: |
+          mkdir smoke-certs
+          openssl req -x509 -nodes -newkey rsa:2048 -keyout smoke-certs/turtl.key -out smoke-certs/turtl.crt -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' > /dev/null 2>&1
+          chmod 644 smoke-certs/turtl.key
+          docker run --detach --name frontend-smoke --add-host backend:127.0.0.1 -p 127.0.0.1:8443:8080 -v "$PWD/smoke-certs:/run/secrets:ro" turtl-frontend:build
+          trap 'docker logs frontend-smoke; docker rm -f frontend-smoke' EXIT
+          curl --fail --insecure --retry 12 --retry-connrefused --retry-delay 2 https://localhost:8443/ --output frontend-smoke.html
+          grep -q 'id="app"' frontend-smoke.html
+      - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        id: syft
+        with:
+          syft-version: v1.56.0
+      - name: Capture the built image and generate its SBOM
+        env:
+          COMPONENT: ${{ matrix.component }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          mkdir evidence
+          docker image inspect "turtl-$COMPONENT:build" > evidence/image-inspect.json
+          image_id=$(jq -r '.[0].Id' evidence/image-inspect.json)
+          "$SYFT" "docker:$image_id" -o cyclonedx-json@1.6=evidence/image.cdx.json -o syft-json=evidence/image.syft.json
+          docker save "turtl-$COMPONENT:build" --output evidence/image.tar
+          python scripts/record_container_evidence.py --directory evidence --component "$COMPONENT" --commit "$SOURCE_COMMIT" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - name: Preserve image for promotion without rebuilding
+        if: ${{ !cancelled() && hashFiles('evidence/image.tar') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: container-${{ matrix.component }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve SBOM evidence
+        if: ${{ !cancelled() && hashFiles('evidence/image.cdx.json') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: sbom-${{ matrix.component }}
+          path: |
+            evidence/*.json
+          if-no-files-found: error
+          retention-days: 90
+
+  publish-private:
+    name: Private registry (${{ matrix.component }})
+    if: ${{ github.event_name == 'push' && github.repository == 'j0770/turtl-cicd' }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [frontend, backend]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      COMPONENT: ${{ matrix.component }}
+      SOURCE_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.12"
+      - name: Require successful CI for this exact source commit
+        run: |
+          for attempt in $(seq 1 30); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SOURCE_COMMIT&per_page=10" > ci-runs.json
+            status=$(jq -r '.workflow_runs[0].status // "missing"' ci-runs.json)
+            conclusion=$(jq -r '.workflow_runs[0].conclusion // "missing"' ci-runs.json)
+            if [ "$status" = completed ]; then
+              test "$conclusion" = success
+              exit $?
+            fi
+            sleep 10
+          done
+          echo 'No completed successful CI for this source commit.' >&2
+          exit 1
+      - name: Require a private repository and private package destination
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY" > repository-visibility.json
+          jq -e '.private == true and .owner.type == "User"' repository-visibility.json > /dev/null
+          package="turtl-cicd-private/$COMPONENT"
+          encoded=$(jq -rn --arg value "$package" '$value|@uri')
+          endpoint="users/${GITHUB_REPOSITORY_OWNER}/packages/container/$encoded"
+          echo "PACKAGE_ENDPOINT=$endpoint" >> "$GITHUB_ENV"
+          if gh api "$endpoint" > package-before.json 2> package-before-error.txt; then
+            jq -e '.visibility == "private"' package-before.json > /dev/null
+          else
+            # A public package is visible. Only a 404 permits first creation;
+            # GHCR creates new personal packages as private. Other errors stop here.
+            grep -q 'HTTP 404' package-before-error.txt
+            printf '{"state":"not_found","first_push_policy":"GHCR personal packages default private"}\n' > package-before.json
+          fi
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: container-${{ matrix.component }}
+          path: evidence
+      - name: Verify artifact integrity and restore the built image
+        run: |
+          python -c "import hashlib,json,pathlib; p=pathlib.Path('evidence/image.tar'); h=hashlib.file_digest(p.open('rb'),'sha256').hexdigest(); assert h==json.loads(pathlib.Path('evidence/evidence.json').read_text())['files']['image.tar']['sha256']"
+          docker load --input evidence/image.tar
+          docker image inspect "turtl-$COMPONENT:build" > evidence/image-inspect.json
+          python -m pip install jsonschema==4.25.1
+          python scripts/record_container_evidence.py --directory evidence --component "$COMPONENT" --commit "$SOURCE_COMMIT" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/turtl-cicd-private/$COMPONENT"
+          if [ "$GITHUB_REF" = refs/heads/main ]; then prefix=sha; else prefix=validation-sha; fi
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$prefix-$SOURCE_COMMIT" >> "$GITHUB_ENV"
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the previously built image without replacing a commit tag
+        run: |
+          if ! jq -e '.state == "not_found"' package-before.json >/dev/null; then
+            gh api --paginate "$PACKAGE_ENDPOINT/versions?per_page=100" --jq '.[] | .metadata.container.tags[]?' > existing-tags.txt
+            if grep -Fxq "$IMAGE_TAG" existing-tags.txt; then
+              echo 'Commit tag already exists; refusing to overwrite it.' >&2
+              exit 1
+            fi
+          fi
+          docker tag "turtl-$COMPONENT:build" "$IMAGE:$IMAGE_TAG"
+          docker push "$IMAGE:$IMAGE_TAG"
+          gh api "$PACKAGE_ENDPOINT" > package-after.json
+          jq -e '.visibility == "private"' package-after.json > /dev/null
+          docker pull "$IMAGE:$IMAGE_TAG"
+          docker image inspect "$IMAGE:$IMAGE_TAG" > evidence/image-inspect.json
+          digest_ref=$(jq -r --arg prefix "$IMAGE@" '.[0].RepoDigests[] | select(startswith($prefix))' evidence/image-inspect.json | head -n 1)
+          test -n "$digest_ref"
+          echo "DIGEST_REF=$digest_ref" >> "$GITHUB_ENV"
+      - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        id: syft
+        with:
+          syft-version: v1.56.0
+      - name: Generate and validate SBOM for the published digest
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          python -m pip install jsonschema==4.25.1
+          "$SYFT" "registry:$DIGEST_REF" -o cyclonedx-json@1.6=evidence/image.cdx.json -o syft-json=evidence/image.syft.json
+          python scripts/record_container_evidence.py --directory evidence --component "$COMPONENT" --commit "$SOURCE_COMMIT" --registry-ref "$DIGEST_REF" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - name: Preserve private registry verification and SBOM
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: published-${{ matrix.component }}
+          path: |
+            evidence/*.json
+            package-before.json
+            package-after.json
+            ci-runs.json
+          if-no-files-found: error
+          retention-days: 90
