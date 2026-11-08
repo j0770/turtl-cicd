@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import TextButton from '@/components/buttons/TextButton.vue'
-import {TaskDifficulty, TaskType, useCatalogStore} from '@/stores/CatalogStore'
-import {useField, useForm, useResetForm} from 'vee-validate'
-import {ref} from 'vue'
-import {useToast} from 'vue-toastification'
+import { TaskDifficulty, TaskType, useCatalogStore } from '@/stores/CatalogStore'
+import { useField, useForm, useResetForm } from 'vee-validate'
+import { ref } from 'vue'
+import { useToast } from 'vue-toastification'
 import * as yup from 'yup'
-import {useRouter} from "vue-router";
+import { useRouter } from 'vue-router'
 
 const showDialog = ref(false)
 const toast = useToast()
@@ -72,11 +72,11 @@ const addTask = handleSubmit(async (values) => {
       values.difficulty
     )
     .then((classroom) => {
-      if(!classroom) return
+      if (!classroom) return
       resetAndHideModal()
       toast.success('Task created successfully')
-      const taskList = classroom.projects.filter(p => p.id === props.projectId)[0].tasks
-      const taskId = taskList[taskList.length - 1 ].id
+      const taskList = classroom.projects.filter((p) => p.id === props.projectId)[0].tasks
+      const taskId = taskList[taskList.length - 1].id
       router.push({
         name: 'InstructorTask',
         params: {

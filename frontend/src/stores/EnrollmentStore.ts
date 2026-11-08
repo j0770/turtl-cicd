@@ -1,10 +1,15 @@
 import { makeAPIRequest } from '@/communication/APIRequests'
-import type {ClassroomShort, HelpfulResource} from '@/stores/CatalogStore'
+import type { ClassroomShort, HelpfulResource } from '@/stores/CatalogStore'
+import {
+  AcceptanceCriteriaType,
+  QuestionType,
+  TaskDifficulty,
+  TaskType
+} from '@/stores/CatalogStore'
+import { EnrollmentNotLoadedError } from '@/stores/exceptions'
 import type { User } from '@/stores/UserStore'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import {AcceptanceCriteriaType, QuestionType, TaskDifficulty, TaskType} from '@/stores/CatalogStore'
-import {EnrollmentNotLoadedError} from '@/stores/exceptions'
 
 export type EnrollmentShort = {
   id: number
@@ -82,9 +87,9 @@ export type EnrollmentDetail = {
 }
 
 export enum AcceptanceCriteriaSolutionResult {
-  Correct = "correct",
-  Incorrect = "incorrect",
-  Missing = "missing"
+  Correct = 'correct',
+  Incorrect = 'incorrect',
+  Missing = 'missing'
 }
 
 type TaskSubmitResponse = {
@@ -116,7 +121,7 @@ export const useEnrollmentStore = defineStore('invitation', () => {
   }
 
   async function getEnrollment(enrollmentId: number) {
-    if(enrollment.value?.id !== enrollmentId) {
+    if (enrollment.value?.id !== enrollmentId) {
       enrollment.value = undefined
     }
     const response = await makeAPIRequest(`/enrollments/${enrollmentId}`, 'GET', true, true)
@@ -125,7 +130,7 @@ export const useEnrollmentStore = defineStore('invitation', () => {
   }
 
   function getTask(targetTaskId: number): TaskStudent | undefined {
-    if(!enrollment.value) {
+    if (!enrollment.value) {
       throw new EnrollmentNotLoadedError('Cannot get task: No enrollment was loaded yet')
     }
     let targetTask
@@ -141,27 +146,29 @@ export const useEnrollmentStore = defineStore('invitation', () => {
   }
 
   async function submitSolution(task: TaskStudent) {
-    if(!enrollment.value) {
+    if (!enrollment.value) {
       throw new EnrollmentNotLoadedError('Cannot submit solution: No enrollment was loaded yet')
     }
 
     const requestBody: {
       questions: {
-        id: number,
+        id: number
         selected_choices: number[]
-      }[],
-      regexes: RegExStudent[],
+      }[]
+      regexes: RegExStudent[]
       flags: FlagStudent[]
     } = {
       questions: [],
-      regexes: (task.acceptance_criteria.regexes) ? task.acceptance_criteria.regexes : [],
-      flags: (task.acceptance_criteria.flags) ? task.acceptance_criteria.flags : []
+      regexes: task.acceptance_criteria.regexes ? task.acceptance_criteria.regexes : [],
+      flags: task.acceptance_criteria.flags ? task.acceptance_criteria.flags : []
     }
 
     task.acceptance_criteria.questions?.forEach((question) => {
       requestBody.questions.push({
         id: question.id,
-        selected_choices: question.choices.filter(choice => choice.checked).map(choice => choice.id)
+        selected_choices: question.choices
+          .filter((choice) => choice.checked)
+          .map((choice) => choice.id)
       })
     })
 
@@ -171,7 +178,7 @@ export const useEnrollmentStore = defineStore('invitation', () => {
       true,
       true,
       requestBody
-      )
+    )
 
     return response.data as TaskSubmitResponse
   }

@@ -4,9 +4,9 @@ import { toTypedSchema } from '@vee-validate/yup'
 import { useField, useForm } from 'vee-validate'
 import { useRouter } from 'vue-router'
 import * as yup from 'yup'
-import {useToast} from "vue-toastification"
-import {ref} from "vue"
-import {makeAPIRequest} from "@/communication/APIRequests"
+import { useToast } from 'vue-toastification'
+import { ref } from 'vue'
+import { makeAPIRequest } from '@/communication/APIRequests'
 
 const router = useRouter()
 const toast = useToast()
@@ -20,13 +20,13 @@ const schema = toTypedSchema(
       .required('This field is required')
       .email('Please enter a valid email address'),
     password: yup
-        .string()
-        .required('This field is required')
-        .min(8, 'Password needs to be 8 characters long'),
+      .string()
+      .required('This field is required')
+      .min(8, 'Password needs to be 8 characters long'),
     passwordConfirm: yup
-        .string()
-        .required('This field is required')
-        .oneOf([yup.ref('password')], 'Passwords do not match')
+      .string()
+      .required('This field is required')
+      .oneOf([yup.ref('password')], 'Passwords do not match')
   })
 )
 const { handleSubmit } = useForm({ validationSchema: schema })
@@ -55,14 +55,16 @@ const submit = handleSubmit((values) => {
     token: router.currentRoute.value.query.token
   }
   makeAPIRequest('/users/invitations/accept', 'POST', false, false, requestBody)
-      .then(() => {
-        toast.success("You have registered successfully and you can now log in using your credentials.")
-        router.push({ name: 'signin' })
-      })
-      .catch((e) => toast.error(e.message))
-      .finally(() => {
-        submitButtonDisabled.value = false
-      })
+    .then(() => {
+      toast.success(
+        'You have registered successfully and you can now log in using your credentials.'
+      )
+      router.push({ name: 'signin' })
+    })
+    .catch((e) => toast.error(e.message))
+    .finally(() => {
+      submitButtonDisabled.value = false
+    })
 })
 </script>
 
@@ -77,8 +79,10 @@ const submit = handleSubmit((values) => {
         <v-form @submit="submit">
           <div class="text-h4 font-weight-bold text-center mb-4">Register</div>
           <p class="text-center mb-2">You have been invited to join TURTL.</p>
-          <p class="text-center">Please register using the email address your invitation was sent to.</p>
-          <br>
+          <p class="text-center">
+            Please register using the email address your invitation was sent to.
+          </p>
+          <br />
           <v-text-field
             v-model="emailValue"
             :error-messages="emailError"
@@ -100,8 +104,13 @@ const submit = handleSubmit((values) => {
             type="password"
             label="Confirm Password"
             placeholder="Confirm Password"
-          ></v-text-field><br>
-          <PrimaryButton button-name="Register" button-type="submit" :disabled="submitButtonDisabled"></PrimaryButton>
+          ></v-text-field
+          ><br />
+          <PrimaryButton
+            button-name="Register"
+            button-type="submit"
+            :disabled="submitButtonDisabled"
+          ></PrimaryButton>
         </v-form>
       </v-sheet>
     </div>
@@ -109,23 +118,23 @@ const submit = handleSubmit((values) => {
 </template>
 
 <style scoped>
-  #container {
-    height: fit-content;
-    min-height: 100vh;
-    position: relative;
-  }
+#container {
+  height: fit-content;
+  min-height: 100vh;
+  position: relative;
+}
 
-  #background::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    background-image: url(@/assets/logo.svg);
-    background-size: contain;
-    background-repeat: space;
-    opacity: 0.2;
-  }
+#background::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background-image: url(@/assets/logo.svg);
+  background-size: contain;
+  background-repeat: space;
+  opacity: 0.2;
+}
 </style>

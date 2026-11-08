@@ -110,10 +110,7 @@ function getInstructor(instructors: any[]) {
         :search="search"
       >
         <template #[`item.link`]="{ item }">
-          <TextButton
-            buttonName="Edit"
-            :goTo="`/instructor/classrooms/${item.id}`"
-          ></TextButton>
+          <TextButton buttonName="Edit" :goTo="`/instructor/classrooms/${item.id}`"></TextButton>
         </template>
         <template v-slot:[`item.updated_at`]="{ item }">
           {{ formatReadableDate(item.updated_at) }}

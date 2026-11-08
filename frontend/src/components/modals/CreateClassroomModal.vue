@@ -6,7 +6,7 @@ import { useField, useForm, useResetForm } from 'vee-validate'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import * as yup from 'yup'
-import {useToast} from "vue-toastification";
+import { useToast } from 'vue-toastification'
 
 const showDialog = ref(false)
 const router = useRouter()
@@ -14,13 +14,14 @@ const catalogStore = useCatalogStore()
 const toast = useToast()
 
 const schema = yup.object({
-  title: yup.string()
-      .ensure()
-      .trim()
-      .required('This field is required')
-      .min(3)
-      .max(120)
-      .matches(/.*[a-zA-Z].*/, {message: "The title should contain at least one letter"})
+  title: yup
+    .string()
+    .ensure()
+    .trim()
+    .required('This field is required')
+    .min(3)
+    .max(120)
+    .matches(/.*[a-zA-Z].*/, { message: 'The title should contain at least one letter' })
 })
 
 const { handleSubmit } = useForm({ validationSchema: schema })
@@ -35,7 +36,7 @@ const create = handleSubmit(async (values) => {
   try {
     const response = await catalogStore.createClassroom(values.title)
     await router.push({ name: 'InstructorClassroom', params: { classroomId: response.id } })
-  } catch(e: any) {
+  } catch (e: any) {
     toast.error(e.message)
   }
 })

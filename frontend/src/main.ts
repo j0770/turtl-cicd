@@ -1,14 +1,14 @@
-import App from './App.vue'
-import router from './router'
 import '@mdi/font/css/materialdesignicons.css'
-import {createPinia} from 'pinia'
-import {createApp} from 'vue'
-import {createVuetify, type ThemeDefinition} from 'vuetify'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
+import Toast, { type PluginOptions } from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
+import { createVuetify, type ThemeDefinition } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import 'vuetify/styles'
-import Toast, {type PluginOptions} from 'vue-toastification'
-import 'vue-toastification/dist/index.css';
+import App from './App.vue'
+import router from './router'
 
 const turtlTheme: ThemeDefinition = {
   dark: false,
@@ -33,7 +33,7 @@ const app = createApp(App)
 
 // The options for the used notification library (vue-toastification)
 const toastificationOptions: PluginOptions = {
-  transition: "Vue-Toastification__fade",
+  transition: 'Vue-Toastification__fade',
   maxToasts: 10,
   newestOnTop: true,
   timeout: 5000

@@ -3,9 +3,9 @@ import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import TextButton from '@/components/buttons/TextButton.vue'
 import { useCatalogStore } from '@/stores/CatalogStore'
 import { ref } from 'vue'
-import {useToast} from "vue-toastification";
-import type {Task} from "@/stores/CatalogStore";
-import {useRouter} from "vue-router";
+import { useToast } from 'vue-toastification'
+import type { Task } from '@/stores/CatalogStore'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{ classroomId: number; task: Task }>()
 const showDialog = ref(false)
@@ -15,14 +15,17 @@ const router = useRouter()
 const catalogStore = useCatalogStore()
 
 async function deleteTask() {
-  if(!props.task.id) return
-  catalogStore.deleteTask(props.task.id).then(() => {
-    toast.info("Task deleted")
-    showDialog.value = false
-    router.push({name: "InstructorClassroom", params: { classroomId: props.classroomId }})
-  }).catch((e) => {
-    toast.error(e.message)
-  })
+  if (!props.task.id) return
+  catalogStore
+    .deleteTask(props.task.id)
+    .then(() => {
+      toast.info('Task deleted')
+      showDialog.value = false
+      router.push({ name: 'InstructorClassroom', params: { classroomId: props.classroomId } })
+    })
+    .catch((e) => {
+      toast.error(e.message)
+    })
 }
 </script>
 
