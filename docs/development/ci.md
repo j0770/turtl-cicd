@@ -1,6 +1,6 @@
 # CI-Prüfungen und Auswertung
 
-Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Pushes auf `main` und manuelle Aufrufe. Nach erfolgreicher CI auf `main` veröffentlicht der Container-Workflow die geprüften Images in der privaten Registry. Die Anwendung wird dabei nicht bereitgestellt.
+Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Pushes auf `main` und manuelle Aufrufe. Nach erfolgreicher CI auf `main` veröffentlicht der Container-Workflow die geprüften Images in der GitHub Container Registry. Die Anwendung wird dabei nicht bereitgestellt.
 
 ## Verpflichtende und beratende Prüfungen
 

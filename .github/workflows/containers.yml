@@ -49,7 +49,7 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.title=TURTL ${{ matrix.component }}
-            org.opencontainers.image.description=TURTL image for controlled private delivery
+            org.opencontainers.image.description=TURTL container image
             org.opencontainers.image.created=${{ steps.clock.outputs.created }}
             org.opencontainers.image.version=sha-${{ github.sha }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -104,8 +104,8 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-  publish-private:
-    name: Private registry (${{ matrix.component }})
+  publish:
+    name: Publish to GHCR (${{ matrix.component }})
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'j0770/turtl-cicd' }}
     needs: build
     runs-on: ubuntu-latest
@@ -141,21 +141,21 @@ jobs:
           done
           echo 'No completed successful CI for this source commit.' >&2
           exit 1
-      - name: Require a private repository and private package destination
+      - name: Check GHCR package destination
         run: |
-          gh api "repos/$GITHUB_REPOSITORY" > repository-visibility.json
-          jq -e '.private == true and .owner.type == "User"' repository-visibility.json > /dev/null
           package="turtl-cicd-private/$COMPONENT"
           encoded=$(jq -rn --arg value "$package" '$value|@uri')
           endpoint="users/${GITHUB_REPOSITORY_OWNER}/packages/container/$encoded"
           echo "PACKAGE_ENDPOINT=$endpoint" >> "$GITHUB_ENV"
           if gh api "$endpoint" > package-before.json 2> package-before-error.txt; then
-            jq -e '.visibility == "private"' package-before.json > /dev/null
+            jq -e '.visibility == "private" or .visibility == "public"' package-before.json > /dev/null
           else
-            # A public package is visible. Only a 404 permits first creation;
-            # GHCR creates new personal packages as private. Other errors stop here.
-            grep -q 'HTTP 404' package-before-error.txt
-            printf '{"state":"not_found","first_push_policy":"GHCR personal packages default private"}\n' > package-before.json
+            # GHCR defaults to private on first publication.
+            if ! grep -q 'HTTP 404' package-before-error.txt; then
+              cat package-before-error.txt >&2
+              exit 1
+            fi
+            printf '{"state":"not_found","first_push_policy":"GHCR packages default private"}\n' > package-before.json
           fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
@@ -188,7 +188,7 @@ jobs:
           docker tag "turtl-$COMPONENT:build" "$IMAGE:$IMAGE_TAG"
           docker push "$IMAGE:$IMAGE_TAG"
           gh api "$PACKAGE_ENDPOINT" > package-after.json
-          jq -e '.visibility == "private"' package-after.json > /dev/null
+          jq -e '.visibility == "private" or .visibility == "public"' package-after.json > /dev/null
           docker pull "$IMAGE:$IMAGE_TAG"
           docker image inspect "$IMAGE:$IMAGE_TAG" > evidence/image-inspect.json
           digest_ref=$(jq -r --arg prefix "$IMAGE@" '.[0].RepoDigests[] | select(startswith($prefix))' evidence/image-inspect.json | head -n 1)
@@ -205,7 +205,7 @@ jobs:
           python -m pip install jsonschema==4.25.1
           "$SYFT" "registry:$DIGEST_REF" -o cyclonedx-json@1.6=evidence/image.cdx.json -o syft-json=evidence/image.syft.json
           python scripts/record_container_evidence.py --directory evidence --component "$COMPONENT" --commit "$SOURCE_COMMIT" --registry-ref "$DIGEST_REF" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-      - name: Preserve private registry verification and SBOM
+      - name: Preserve registry verification and SBOM
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
