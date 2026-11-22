@@ -311,6 +311,19 @@ jobs:
       - name: Validate Docker Compose model
         run: docker compose --file deploy/docker-compose.yaml config --quiet
 
+      - name: Validate GHCR deployment model
+        env:
+          TURTL_FRONTEND_IMAGE: ghcr.io/j0770/turtl-cicd-private/frontend@sha256:1111111111111111111111111111111111111111111111111111111111111111
+          TURTL_BACKEND_IMAGE: ghcr.io/j0770/turtl-cicd-private/backend@sha256:2222222222222222222222222222222222222222222222222222222222222222
+        run: |
+          bash -n deploy/deploy-ghcr.sh
+          docker compose --file deploy/docker-compose.yaml --file deploy/compose.ghcr.yaml config --format json \
+            | jq -e --arg frontend "$TURTL_FRONTEND_IMAGE" --arg backend "$TURTL_BACKEND_IMAGE" '
+              .services.frontend.image == $frontend and .services.backend.image == $backend
+              and .services.frontend.build == null and .services.backend.build == null
+              and (.services.backend.post_start | length) == 0
+            ' > /dev/null
+
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest

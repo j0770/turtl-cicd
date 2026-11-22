@@ -16,6 +16,22 @@ The frontend image contains `deploy/frontend/nginx.container.conf`, with a gener
 
 The backend copies only application directories and manage.py. Repository metadata, frontend dependencies, local environment files and certificates are not copied. The existing Daphne startup and non-root user remain. Both Dockerfiles still use moving base tags and package repositories; bit-for-bit reproducibility and complete action pinning across the entire project are not claimed. New container-workflow actions are pinned to full commits.
 
+## Deployment on the target host
+
+Copy the `deploy/` configuration to the target and provision its `.env`, Nginx configuration and certificates as documented in the installation guide. Use the same directory and Compose project name as the existing installation to retain its volumes. The host needs Docker Compose, Bash, `curl` and `flock`. If the GHCR packages are private, authenticate the host to the registry with credentials that can read both packages.
+
+Take both image digest references from the same successful Container delivery run's `published-frontend` and `published-backend` evidence. Run the script on the approved target with the HTTPS URL and an absolute path to a protected backup directory.
+
+```bash
+export TURTL_BASE_URL=https://turtl.example.org
+export TURTL_BACKUP_DIR=/var/backups/turtl
+bash deploy/deploy-ghcr.sh "$frontend_digest_ref" "$backend_digest_ref"
+```
+
+The script uses the existing Compose services and the `compose.ghcr.yaml` overrides. It records the current frontend and backend images, pulls the selected images, makes a PostgreSQL dump and checks its archive listing before running migrations and collecting static assets. It then starts the stack and checks the frontend and Django admin over HTTPS. The backup directory also holds the selected image references after a successful deployment.
+
+For a rollback with a compatible database schema, set `TURTL_FRONTEND_IMAGE` and `TURTL_BACKEND_IMAGE` to the previous digest references. In the deployment directory, use `docker compose --env-file .env -f docker-compose.yaml -f compose.ghcr.yaml pull frontend backend` followed by `docker compose --env-file .env -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --wait`. Decide separately whether recovery requires restoring the database backup.
+
 ## Actual checks and SBOM scope
 
 The backend smoke check imports core libraries, checks application packaging and invokes Daphne help. It does not start Django against PostgreSQL/Redis or Proxmox. The frontend smoke check starts Nginx with a short-lived test certificate and checks the HTTPS SPA entry. It does not validate backend proxying, authentication or an actual target deployment.
