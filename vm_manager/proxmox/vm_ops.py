@@ -1,5 +1,6 @@
-import time
 import logging
+import time
+
 from proxmoxer.core import ResourceException
 
 logger = logging.getLogger(__name__)
@@ -9,23 +10,27 @@ POLL_INTERVAL = 2
 ACL_PROPAGATION_TIMEOUT = 30
 
 
-def clone_vm(proxmox, node, template_id, new_id, new_name, linked_clone=True, pool=None):
+def clone_vm(
+    proxmox, node, template_id, new_id, new_name, linked_clone=True, pool=None
+):
     """
     Clones a VM from a template_id as a linked clone
     """
     params = {
-        'newid': new_id,
-        'name' : new_name,
-        'target': node,
-        'full': 0 if linked_clone else 1
+        "newid": new_id,
+        "name": new_name,
+        "target": node,
+        "full": 0 if linked_clone else 1,
     }
 
     if pool:
-        params['pool'] = pool
+        params["pool"] = pool
 
     try:
         proxmox.nodes(node).qemu(template_id).clone.post(**params)
-        logger.debug("Clone command sent for vmid=%s from template_id=%s", new_id, template_id)
+        logger.debug(
+            "Clone command sent for vmid=%s from template_id=%s", new_id, template_id
+        )
     except Exception:
         logger.exception(
             "Error cloning template template_id=%s new_id=%s node=%s",
@@ -68,7 +73,7 @@ def wait_for_unlock(proxmox, node, vm_id, timeout=None, interval=None):
 
     start = time.time()
     while True:
-        locks = _get_vm_status(proxmox, node, vm_id).get('lock')
+        locks = _get_vm_status(proxmox, node, vm_id).get("lock")
         if not locks:
             return
         if time.time() - start > timeout:
@@ -87,8 +92,8 @@ def wait_for_vm_stopped(proxmox, node, vm_id, timeout=None, interval=None):
 
     start = time.time()
     while True:
-        vm_status = _get_vm_status(proxmox, node, vm_id).get('status')
-        if vm_status == 'stopped':
+        vm_status = _get_vm_status(proxmox, node, vm_id).get("status")
+        if vm_status == "stopped":
             return
         if time.time() - start > timeout:
             raise TimeoutError(f"Timeout waiting for VM {vm_id} to stop")
@@ -100,14 +105,25 @@ def _detect_boot_disk_from_config(config):
     Detects the boot disk from a VM config dict by looking for the first
     existing disk in common bus types (scsi, sata, ide, virtio).
     """
-    for bus in ('scsi', 'sata', 'ide', 'virtio'):
-        key = f'{bus}0'
+    for bus in ("scsi", "sata", "ide", "virtio"):
+        key = f"{bus}0"
         if key in config:
             return key
-    return 'scsi0'
+    return "scsi0"
 
 
-def configure_vm(proxmox, node, vm_id, storage, cpu_cores, memory_mb, bridge=None, vlan_tag=None, ip_address=None, cloud_init=True):
+def configure_vm(
+    proxmox,
+    node,
+    vm_id,
+    storage,
+    cpu_cores,
+    memory_mb,
+    bridge=None,
+    vlan_tag=None,
+    ip_address=None,
+    cloud_init=True,
+):
     """
     Configures the VM. When cloud_init is True, a cloud-init drive is
     attached and ipconfig0 is set if an IP address is provided.
@@ -117,44 +133,46 @@ def configure_vm(proxmox, node, vm_id, storage, cpu_cores, memory_mb, bridge=Non
         vm_config = proxmox.nodes(node).qemu(vm_id).config.get()
         boot_disk = _detect_boot_disk_from_config(vm_config)
         config_params = {
-            'agent': 'enabled=1',
-            'boot': f'order={boot_disk}',
-            'sockets': 1,
-            'cores': int(cpu_cores),
-            'memory': int(memory_mb),
+            "agent": "enabled=1",
+            "boot": f"order={boot_disk}",
+            "sockets": 1,
+            "cores": int(cpu_cores),
+            "memory": int(memory_mb),
         }
 
         if bridge:
             # Preserve existing NIC model and MAC, only update bridge and VLAN tag
-            existing_net0 = vm_config.get('net0', '')
+            existing_net0 = vm_config.get("net0", "")
             if existing_net0:
                 # Parse existing config into key=value parts, keeping model=MAC as-is
-                parts = existing_net0.split(',')
+                parts = existing_net0.split(",")
                 new_parts = []
                 for part in parts:
-                    key = part.split('=')[0] if '=' in part else ''
-                    if key in ('bridge', 'tag'):
+                    key = part.split("=")[0] if "=" in part else ""
+                    if key in ("bridge", "tag"):
                         continue  # drop old bridge/tag
                     new_parts.append(part)
                 new_parts.append(f"bridge={bridge}")
                 if vlan_tag is not None:
                     new_parts.append(f"tag={vlan_tag}")
-                net0 = ','.join(new_parts)
+                net0 = ",".join(new_parts)
             else:
                 net0 = f"virtio,bridge={bridge}"
                 if vlan_tag is not None:
                     net0 += f",tag={vlan_tag}"
-            config_params['net0'] = net0
+            config_params["net0"] = net0
 
         if cloud_init:
-            config_params['ide2'] = f"{storage}:cloudinit"
+            config_params["ide2"] = f"{storage}:cloudinit"
             if ip_address:
-                config_params['ipconfig0'] = f"ip={ip_address}"
+                config_params["ipconfig0"] = f"ip={ip_address}"
             # TODO: cicustom can be re-enabled to support custom cloud-init snippets
             # config_params['cicustom'] = 'user=local:snippets/user-data.yaml'
 
         proxmox.nodes(node).qemu(vm_id).config.post(**config_params)
-        logger.debug("VM options set successfully vmid=%s cloud_init=%s", vm_id, cloud_init)
+        logger.debug(
+            "VM options set successfully vmid=%s cloud_init=%s", vm_id, cloud_init
+        )
     except Exception:
         logger.exception("Error configuring VM vmid=%s node=%s", vm_id, node)
         raise

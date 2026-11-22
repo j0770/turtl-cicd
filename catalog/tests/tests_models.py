@@ -41,16 +41,30 @@ class ClassroomTemplateModelTest(TestCase):
         classroom = Classroom.objects.create(title="Test Classroom Template")
         classroom.save()
 
-        classroom_instructor1 = ClassroomInstructor.objects.create(instructor=instructor,
-                                                                   classroom=classroom,
-                                                                   added_by=instructor)
+        classroom_instructor1 = ClassroomInstructor.objects.create(
+            instructor=instructor, classroom=classroom, added_by=instructor
+        )
         classroom_instructor1.save()
 
-        return student, instructor, instructor2, administrator, classroom, classroom_instructor1
+        return (
+            student,
+            instructor,
+            instructor2,
+            administrator,
+            classroom,
+            classroom_instructor1,
+        )
 
     def test_permissions_edit(self):
 
-        student, instructor, instructor2, administrator, classroom, classroom_instructor1 = self.set_up_classroom()
+        (
+            student,
+            instructor,
+            instructor2,
+            administrator,
+            classroom,
+            classroom_instructor1,
+        ) = self.set_up_classroom()
 
         # Instructors can edit their own classrooms
         self.assertTrue(instructor.has_perm("catalog.change_classroom", classroom))
@@ -64,20 +78,21 @@ class ClassroomTemplateModelTest(TestCase):
 
     def test_permissions_delete(self):
 
-        student, instructor, instructor2, administrator, classroom, classroom_instructor1 = self.set_up_classroom()
+        (
+            student,
+            instructor,
+            instructor2,
+            administrator,
+            classroom,
+            classroom_instructor1,
+        ) = self.set_up_classroom()
 
         # Instructors can delete their own classrooms
         self.assertTrue(instructor.has_perm("catalog.delete_classroom", classroom))
         self.assertFalse(instructor2.has_perm("catalog.delete_classroom", classroom))
 
         # Students cannot
-        self.assertFalse(student.has_perm("catalog.delete_classroom",  classroom))
+        self.assertFalse(student.has_perm("catalog.delete_classroom", classroom))
 
         # Administrators can do anything
         self.assertTrue(administrator.has_perm("catalog.delete_classroom", classroom))
-
-
-
-
-
-

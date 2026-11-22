@@ -3,21 +3,24 @@ import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import TextButton from '@/components/buttons/TextButton.vue'
 import { useCatalogStore } from '@/stores/CatalogStore'
 import { ref } from 'vue'
-import {useToast} from "vue-toastification";
+import { useToast } from 'vue-toastification'
 
-const props = defineProps<{ projectId: number , projectTitle: string}>()
+const props = defineProps<{ projectId: number; projectTitle: string }>()
 const showDialog = ref(false)
 const toast = useToast()
 
 const catalogStore = useCatalogStore()
 
 async function deleteProject() {
-  catalogStore.deleteProject(props.projectId).then(() => {
-    toast.info("Project deleted")
-    showDialog.value = false
-  }).catch((e) => {
-    toast.error(e.message)
-  })
+  catalogStore
+    .deleteProject(props.projectId)
+    .then(() => {
+      toast.info('Project deleted')
+      showDialog.value = false
+    })
+    .catch((e) => {
+      toast.error(e.message)
+    })
 }
 </script>
 

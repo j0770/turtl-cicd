@@ -1,16 +1,19 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from rules import is_authenticated
 from rules.contrib.models import RulesModel
-from .predicates import manages_classroom, manages_project, manages_task
+
 from authentication.models import User
 from authentication.predicates import is_instructor
-from django.utils.translation import gettext_lazy as _
+
+from .predicates import manages_classroom, manages_project, manages_task
 
 
 class Regex(models.Model):
     """
     A regex is a regular expression that is used to check whether the user has completed the task.
     """
+
     prompt = models.CharField(max_length=200)
     pattern = models.CharField(max_length=200)
 
@@ -19,6 +22,7 @@ class Flag(models.Model):
     """
     A flag is a string that the user has to submit to prove that they have completed the task.
     """
+
     prompt = models.CharField(max_length=200)
     value = models.CharField(max_length=200)
 
@@ -34,11 +38,13 @@ class Question(models.Model):
 
     # The different types a question can have
     class QuestionType(models.TextChoices):
-        SINGLE_CHOICE = 'SINGLE_CHOICE', _('Single choice')
-        MULTIPLE_CHOICE = 'MULTIPLE_CHOICE', _('Multiple choice')
+        SINGLE_CHOICE = "SINGLE_CHOICE", _("Single choice")
+        MULTIPLE_CHOICE = "MULTIPLE_CHOICE", _("Multiple choice")
 
     # Type of the question, i.e. whether it is a single choice or multiple choice question
-    question_type = models.CharField(choices=QuestionType.choices, default=QuestionType.SINGLE_CHOICE, max_length=15)
+    question_type = models.CharField(
+        choices=QuestionType.choices, default=QuestionType.SINGLE_CHOICE, max_length=15
+    )
 
 
 class QuestionChoice(models.Model):
@@ -51,7 +57,9 @@ class QuestionChoice(models.Model):
     # Whether this answer is correct
     is_correct = models.BooleanField(default=False)
     # Linking each choice to a question
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="choices"
+    )
 
 
 class AcceptanceCriteria(models.Model):
@@ -62,14 +70,16 @@ class AcceptanceCriteria(models.Model):
 
     # The different types the AcceptanceCriteria of a task can have
     class CriteriaType(models.TextChoices):
-        DISABLED = 'DISABLED', _('Disabled')
-        MANUAL = 'MANUAL', _('Manual')
-        QUIZ = 'QUIZ', _('Quiz')
-        REGEX = 'REGEX', _('Regular expression')
-        FLAG = 'FLAG', _('Flag')
-        MIXED = 'MIXED', _('Mixed')
+        DISABLED = "DISABLED", _("Disabled")
+        MANUAL = "MANUAL", _("Manual")
+        QUIZ = "QUIZ", _("Quiz")
+        REGEX = "REGEX", _("Regular expression")
+        FLAG = "FLAG", _("Flag")
+        MIXED = "MIXED", _("Mixed")
 
-    criteria_type = models.CharField(choices=CriteriaType.choices, default=CriteriaType.DISABLED, max_length=8)
+    criteria_type = models.CharField(
+        choices=CriteriaType.choices, default=CriteriaType.DISABLED, max_length=8
+    )
 
     # Additional fields for each criteria type, if necessary
     questions = models.ManyToManyField(Question, blank=True)
@@ -84,9 +94,9 @@ class AcceptanceCriteria(models.Model):
 
 class Classroom(RulesModel):
     """
-        A Classroom has a title, a description, a created_at timestamp and an updated_at timestamp.
-        It has a ManyToMany relationship (instructors) to the User model and a OneToMany relationship to the
-        Project model.
+    A Classroom has a title, a description, a created_at timestamp and an updated_at timestamp.
+    It has a ManyToMany relationship (instructors) to the User model and a OneToMany relationship to the
+    Project model.
     """
 
     # A Classroom has a title e.g.: Eternal Blue Exploit
@@ -99,10 +109,12 @@ class Classroom(RulesModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     # The Instructors who own this classroom
-    instructors = models.ManyToManyField(User,
-                                         through="ClassroomInstructor",
-                                         through_fields=('classroom', 'instructor'),
-                                         related_name='classrooms')
+    instructors = models.ManyToManyField(
+        User,
+        through="ClassroomInstructor",
+        through_fields=("classroom", "instructor"),
+        related_name="classrooms",
+    )
 
     # Permissions (Administrators automatically have all permissions)
     class Meta:
@@ -115,30 +127,40 @@ class Classroom(RulesModel):
             # modify
             "change": is_authenticated & is_instructor & manages_classroom,
             # The same applies for deleting classrooms
-            "delete": is_authenticated & is_instructor & manages_classroom
+            "delete": is_authenticated & is_instructor & manages_classroom,
         }
 
 
 class ClassroomInstructor(models.Model):
     """
-        This model defines the relationship between a Classroom and a User (i.e. an instructor). It consists of
-        the two necessary foreign keys and a timestamp added_at which saves when this instructor was added to the
-        Classroom. It also contains an added_by field which references the user who added the instructor to the
-        Classroom.
+    This model defines the relationship between a Classroom and a User (i.e. an instructor). It consists of
+    the two necessary foreign keys and a timestamp added_at which saves when this instructor was added to the
+    Classroom. It also contains an added_by field which references the user who added the instructor to the
+    Classroom.
     """
+
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE)
-    instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='classroominstructor_instructor')
+    instructor = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="classroominstructor_instructor"
+    )
     added_at = models.DateTimeField(auto_now_add=True)
 
     # Please note that it is possible for a user to delete their account. When instructor A added another instructor B
     # but instructor A deletes their account, the relationship between instructor B and the Classroom still
     # exists. However, the user (instructor A) who added instructor B might not. In this case, the added_by field
     # should be set to NULL (which is why it is nullable).
-    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
-                                 related_name='classroominstructor_added_by')
+    added_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="classroominstructor_added_by",
+    )
 
     class Meta:
-        unique_together = ('classroom', 'instructor',)
+        unique_together = (
+            "classroom",
+            "instructor",
+        )
 
 
 class HelpfulResource(models.Model):
@@ -146,19 +168,23 @@ class HelpfulResource(models.Model):
 
     url = models.URLField(max_length=200)
 
-    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="helpful_resources")
+    classroom = models.ForeignKey(
+        Classroom, on_delete=models.CASCADE, related_name="helpful_resources"
+    )
 
 
 class Project(RulesModel):
     """
-        A Project is contained within a classroom. It consists of a title and some tasks.
+    A Project is contained within a classroom. It consists of a title and some tasks.
     """
 
     # Title of the Project
     title = models.CharField(max_length=120)
 
     # The corresponding classroom which this Project is a part of
-    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name='projects')
+    classroom = models.ForeignKey(
+        Classroom, on_delete=models.CASCADE, related_name="projects"
+    )
 
     # Permissions (Administrators automatically have all permissions)
     class Meta:
@@ -172,41 +198,48 @@ class Project(RulesModel):
             # Only instructors managing the specific classroom can delete a project
             "delete": is_authenticated & is_instructor & manages_project,
         }
-        unique_together = ('title', 'classroom',)
+        unique_together = (
+            "title",
+            "classroom",
+        )
 
 
 class Task(RulesModel):
     """
-        A Task is part of a Project.
+    A Task is part of a Project.
     """
 
     # Title of the Task
     title = models.CharField(max_length=50)
 
     # The project that this Task belongs to
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
 
     # Description of the Task
     description = models.TextField()
 
     # Tasks can have one of three types: neutral, attack and defense
     class TaskType(models.TextChoices):
-        NEUTRAL = 'NEUTRAL', _('Neutral')
-        DEFENSE = 'DEFENSE', _('Defense')
-        ATTACK = 'ATTACK', _('Attack')
+        NEUTRAL = "NEUTRAL", _("Neutral")
+        DEFENSE = "DEFENSE", _("Defense")
+        ATTACK = "ATTACK", _("Attack")
 
-    task_type = models.CharField(choices=TaskType.choices, default=TaskType.NEUTRAL, max_length=7)
+    task_type = models.CharField(
+        choices=TaskType.choices, default=TaskType.NEUTRAL, max_length=7
+    )
 
     # Tasks have a difficulty level (beginner, intermediate or advanced)
     class Difficulty(models.TextChoices):
-        BEGINNER = 'BEGINNER', _('Beginner')
-        INTERMEDIATE = 'INTERMEDIATE', _('Intermediate')
-        ADVANCED = 'ADVANCED', _('Advanced')
+        BEGINNER = "BEGINNER", _("Beginner")
+        INTERMEDIATE = "INTERMEDIATE", _("Intermediate")
+        ADVANCED = "ADVANCED", _("Advanced")
 
     difficulty = models.CharField(choices=Difficulty.choices, max_length=12)
 
     # The acceptance criteria for this Task, meaning how the user can prove that they have completed the task
-    acceptance_criteria = models.ForeignKey(AcceptanceCriteria, on_delete=models.CASCADE)
+    acceptance_criteria = models.ForeignKey(
+        AcceptanceCriteria, on_delete=models.CASCADE
+    )
 
     # Permissions (Administrators automatically have all permissions)
     class Meta:
@@ -220,4 +253,7 @@ class Task(RulesModel):
             # Deleting a task follows the same permission requirements as editing
             "delete": is_authenticated & is_instructor & manages_task,
         }
-        unique_together = ('title', 'project',)
+        unique_together = (
+            "title",
+            "project",
+        )

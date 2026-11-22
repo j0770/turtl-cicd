@@ -2,10 +2,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from catalog.models import Classroom, Task, Project, ClassroomInstructor
-from catalog.serializers import (ClassroomSerializer, ProjectDetailSerializer,
-                                 TaskSerializer, ClassroomDetailSerializer,
-                                 ProjectNewSerializer, TaskNewSerializer)
+from catalog.models import Classroom, ClassroomInstructor, Project, Task
+from catalog.serializers import (
+    ClassroomDetailSerializer,
+    ClassroomSerializer,
+    ProjectDetailSerializer,
+    ProjectNewSerializer,
+    TaskNewSerializer,
+    TaskSerializer,
+)
 
 
 class ClassroomViewSet(AutoPermissionViewSetMixin, ModelViewSet):
@@ -15,9 +20,11 @@ class ClassroomViewSet(AutoPermissionViewSetMixin, ModelViewSet):
 
     def perform_create(self, serializer):
         classroom: Classroom = serializer.save()
-        ClassroomInstructor.objects.create(instructor=self.request.user,
-                                           classroom=classroom,
-                                           added_by=self.request.user).save()
+        ClassroomInstructor.objects.create(
+            instructor=self.request.user,
+            classroom=classroom,
+            added_by=self.request.user,
+        ).save()
 
 
 class MyClassroomsViewSet(ModelViewSet):

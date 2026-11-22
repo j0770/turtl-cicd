@@ -8,7 +8,7 @@ import AddFlagModal from '@/components/modals/AddFlagModal.vue'
 import AddQuestionModal from '@/components/modals/AddQuestionModal.vue'
 import AddRegexModal from '@/components/modals/AddRegexModal.vue'
 import DeleteTaskModal from '@/components/modals/DeleteTaskModal.vue'
-import type { Flag, Question, RegEx, Task} from '@/stores/CatalogStore'
+import type { Flag, Question, RegEx, Task } from '@/stores/CatalogStore'
 import {
   AcceptanceCriteriaType,
   QuestionType,
@@ -101,7 +101,6 @@ const updateQuestion = (question: Question, index: number) => {
 const deleteQuestion = (index: number) => {
   task.value?.acceptance_criteria.questions?.splice(index, 1)
 }
-
 
 // Form validation for the Task title, description, type and difficulty
 const schema = yup.object({

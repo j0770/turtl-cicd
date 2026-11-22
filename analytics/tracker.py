@@ -1,10 +1,19 @@
 import logging
+
 from .models import AnalyticsEvent
 
 logger = logging.getLogger(__name__)
 
 
-def track(event_type, *, user=None, classroom_id=None, task_id=None, lab_environment_id=None, **metadata):
+def track(
+    event_type,
+    *,
+    user=None,
+    classroom_id=None,
+    task_id=None,
+    lab_environment_id=None,
+    **metadata,
+):
     try:
         AnalyticsEvent.objects.create(
             event_type=event_type,

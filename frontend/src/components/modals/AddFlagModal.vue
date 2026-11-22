@@ -8,7 +8,7 @@ import type { Flag } from '@/stores/CatalogStore'
 
 const showDialog = ref(false)
 
-const props = defineProps<{currentFlag?: Flag}>()
+const props = defineProps<{ currentFlag?: Flag }>()
 
 const schema = yup.object({
   prompt: yup.string().required('This field is required').max(200),
@@ -21,7 +21,7 @@ const { value: newPrompt, errorMessage: promptError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentFlag) ? props.currentFlag.prompt : ''
+    initialValue: props.currentFlag ? props.currentFlag.prompt : ''
   }
 )
 
@@ -30,7 +30,7 @@ const { value: newFlag, errorMessage: flagError } = useField<string>(
   {},
   {
     validateOnValueUpdate: false,
-    initialValue: (props.currentFlag) ? props.currentFlag.value : ''
+    initialValue: props.currentFlag ? props.currentFlag.value : ''
   }
 )
 
@@ -39,11 +39,11 @@ function resetDialog() {
   showDialog.value = false
 }
 
-const emits = defineEmits<{ flagEditingCompleted: [flag: Flag]}>()
+const emits = defineEmits<{ flagEditingCompleted: [flag: Flag] }>()
 
 const addFlag = handleSubmit(() => {
   const flag: Flag = { prompt: newPrompt.value, value: newFlag.value }
-  if(props.currentFlag) {
+  if (props.currentFlag) {
     flag.id = props.currentFlag.id
   }
   emits('flagEditingCompleted', { prompt: newPrompt.value, value: newFlag.value })
@@ -94,7 +94,9 @@ const addFlag = handleSubmit(() => {
                 @click="resetDialog"
                 button-type="button"
               ></TextButton>
-              <PrimaryButton button-type="button" @click="addFlag"><slot name="submitButtonText"></slot></PrimaryButton>
+              <PrimaryButton button-type="button" @click="addFlag"
+                ><slot name="submitButtonText"></slot
+              ></PrimaryButton>
             </v-col>
           </v-row>
         </v-form>

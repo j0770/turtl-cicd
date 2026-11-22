@@ -15,7 +15,7 @@ RUN npm run build
 # Stage 2: Serve with nginx
 FROM nginxinc/nginx-unprivileged:alpine3.23-perl AS runner
 
-COPY deploy/frontend/nginx.conf /etc/nginx/nginx.conf
+COPY deploy/frontend/nginx.container.conf /etc/nginx/nginx.conf
 
 COPY --chown=root:root --chmod=755 --from=builder /app/dist /usr/share/nginx/html
 

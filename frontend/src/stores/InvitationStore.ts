@@ -1,29 +1,27 @@
-import { defineStore } from 'pinia'
-import {ref} from 'vue'
 import { makeAPIRequest } from '@/communication/APIRequests'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export enum TargetRole {
-  STUDENT = "STUDENT",
-  INSTRUCTOR = "INSTRUCTOR"
+  STUDENT = 'STUDENT',
+  INSTRUCTOR = 'INSTRUCTOR'
 }
 
 type User = {
-  id: number,
-  username: string | null,
-  email: string,
+  id: number
+  username: string | null
+  email: string
   role: string
 }
 
 export type Invitation = {
-  id?: number,
-  email: string,
-  target_role: TargetRole,
-  target_role_display?: string,
-  issuer?: User,
+  id?: number
+  email: string
+  target_role: TargetRole
+  target_role_display?: string
+  issuer?: User
   expiration_date?: string
 }
-
-
 
 export const useInvitationStore = defineStore('invitation', () => {
   const allInvitations = ref<Invitation[]>()
@@ -72,6 +70,6 @@ export const useInvitationStore = defineStore('invitation', () => {
     inviteUser,
     inviteMultipleStudents,
     renewInvitation,
-    deleteInvitation,
+    deleteInvitation
   }
 })

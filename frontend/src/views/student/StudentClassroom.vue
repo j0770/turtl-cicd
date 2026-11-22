@@ -169,7 +169,10 @@ function getProjectsDonePercentage(): number {
                   <v-card variant="flat" color="cardColor" class="elevation-4">
                     <v-card-title>Instructors</v-card-title>
                     <v-card-text>
-                      <div v-for="(instructor, index) in enrollment.classroom.instructors">
+                      <div
+                        v-for="(instructor, index) in enrollment.classroom.instructors"
+                        :key="instructor.id"
+                      >
                         <a :href="`mailto:${instructor.email}`">
                           <span v-if="instructor.username"
                             >{{ instructor.username }} &lt;{{ instructor.email }}&gt;</span
@@ -235,7 +238,10 @@ function getProjectsDonePercentage(): number {
                   >
                   <v-card-text>
                     <v-list bg-color="cardColor" base-color="primary">
-                      <v-list-item v-for="resource in enrollment.classroom.helpful_resources">
+                      <v-list-item
+                        v-for="(resource, index) in enrollment.classroom.helpful_resources"
+                        :key="resource.id ?? `resource-${index}`"
+                      >
                         <v-list-item-title style="cursor: pointer">
                           <v-icon icon="mdi-link-variant" size="small"></v-icon>&nbsp;
                           {{ resource.title }}

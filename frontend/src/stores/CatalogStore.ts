@@ -33,7 +33,6 @@ export type Task = {
   acceptance_criteria: AcceptanceCriteria
 }
 
-
 export enum AcceptanceCriteriaType {
   Disabled = 'DISABLED',
   Manual = 'MANUAL',
@@ -141,7 +140,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   }
 
   async function getClassroom(id: number) {
-    if(classroom.value?.id !== id) {
+    if (classroom.value?.id !== id) {
       classroom.value = undefined
     }
     const response = await makeAPIRequest(`/catalog/classrooms/${id}`, 'GET', true, true)

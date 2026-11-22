@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User
 from django.utils.translation import gettext_lazy as _
+
+from .models import User
 
 # Register your admin models here.
 # Checkout https://docs.djangoproject.com/en/3.1/ref/contrib/admin/

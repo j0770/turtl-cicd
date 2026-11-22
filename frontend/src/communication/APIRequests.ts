@@ -1,8 +1,14 @@
+import {
+  BadRequestError,
+  NotFoundError,
+  PermissionDeniedError,
+  ServerError,
+  UnauthorizedError
+} from '@/communication/exceptions'
+import router from '@/router'
+import { useUserStore } from '@/stores/UserStore'
 import axios, { type AxiosRequestConfig } from 'axios'
 import { storeToRefs } from 'pinia'
-import {useUserStore} from "@/stores/UserStore"
-import router from "@/router"
-import { BadRequestError, UnauthorizedError, PermissionDeniedError, NotFoundError, ServerError } from "@/communication/exceptions"
 
 type HTTPMethodName = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
@@ -18,27 +24,29 @@ if (import.meta.env.DEV && !import.meta.env.VITE_API_URL) {
 const APIRequests = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '' })
 
 function isObject(value: any): boolean {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null
 }
 
 function constructErrorMessage(errorObject: any): string {
   // This function constructs an error message by recursively appending each field and its error descriptions together.
   if (typeof errorObject === 'string') {
-    return `${errorObject} `;
+    return `${errorObject} `
   } else if (Array.isArray(errorObject)) {
-    return errorObject.map((item) => constructErrorMessage(item)).join('');
+    return errorObject.map((item) => constructErrorMessage(item)).join('')
   } else if (isObject(errorObject)) {
-    return Object.entries(errorObject).map(([field, errors]) => {
-      if(errors) {
-        return `Field ${field}: ${constructErrorMessage(errors)}`
-      } else {
-        return ''
-      }
-    }).join('');
-  } else if(errorObject === null || errorObject === undefined) {
-    return '';
+    return Object.entries(errorObject)
+      .map(([field, errors]) => {
+        if (errors) {
+          return `Field ${field}: ${constructErrorMessage(errors)}`
+        } else {
+          return ''
+        }
+      })
+      .join('')
+  } else if (errorObject === null || errorObject === undefined) {
+    return ''
   } else {
-    throw new TypeError('Unsupported type encountered');
+    throw new TypeError('Unsupported type encountered')
   }
 }
 
@@ -75,27 +83,39 @@ export async function makeAPIRequest(
     }
     return { statusCode: response.status, data: response.data }
   } catch (error: any) {
-    if(!error.response) {
-      throw new ServerError("The backend API seems to be down or does not respond.", undefined)
+    if (!error.response) {
+      throw new ServerError('The backend API seems to be down or does not respond.', undefined)
     }
-    if(error.response.status === 401
-        && tryToUpdateTokenWhenUnauthorized
-        && await userStore.userIsSignedIn()) {
-      return await userStore.refreshLogin().then(async () => {
-        return await makeAPIRequest(url, method, useAuthorization, false, data)
-      }).catch(async (refreshError) => {
-        if(refreshError instanceof UnauthorizedError) {
-          await userStore.logout(router)
-          throw new UnauthorizedError('Your session has expired. Please sign in again.', refreshError.getData())
-        }
-        throw refreshError
-      })
+    if (
+      error.response.status === 401 &&
+      tryToUpdateTokenWhenUnauthorized &&
+      (await userStore.userIsSignedIn())
+    ) {
+      return await userStore
+        .refreshLogin()
+        .then(async () => {
+          return await makeAPIRequest(url, method, useAuthorization, false, data)
+        })
+        .catch(async (refreshError) => {
+          if (refreshError instanceof UnauthorizedError) {
+            await userStore.logout(router)
+            throw new UnauthorizedError(
+              'Your session has expired. Please sign in again.',
+              refreshError.getData()
+            )
+          }
+          throw refreshError
+        })
     }
 
     // Here, we are either using the error detail field provided by the backend or, if that is not available (e.g.
     // backend form validation errors), we construct an error message out of the form validation errors.
-    const errorMessage = `Error ${error.response?.status}: ${(error.response?.data?.detail) ? error.response.data.detail : constructErrorMessage(error.response?.data?.errors)}`
-    switch(error.response?.status) {
+    const errorMessage = `Error ${error.response?.status}: ${
+      error.response?.data?.detail
+        ? error.response.data.detail
+        : constructErrorMessage(error.response?.data?.errors)
+    }`
+    switch (error.response?.status) {
       case 400:
         throw new BadRequestError(errorMessage, error.response?.data)
       case 401:

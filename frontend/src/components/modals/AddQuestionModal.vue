@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import TextButton from '@/components/buttons/TextButton.vue'
-import type {Question} from '@/stores/CatalogStore'
-import {QuestionType} from "@/stores/CatalogStore";
-import type {Ref} from 'vue'
-import {ref, toRaw} from 'vue'
-import {useToast} from 'vue-toastification'
+import type { Question } from '@/stores/CatalogStore'
+import { QuestionType } from '@/stores/CatalogStore'
+import type { Ref } from 'vue'
+import { ref, toRaw } from 'vue'
+import { useToast } from 'vue-toastification'
 import SecondaryButton from '../buttons/SecondaryButton.vue'
-import type {VForm} from "vuetify/components";
+import type { VForm } from 'vuetify/components'
 
 const showDialog = ref(false)
 const toast = useToast()
@@ -19,31 +19,33 @@ const singleChoiceSelectedAnswerOption = ref<number>(0)
 let question: Ref<Question>
 
 const blankQuestion: Question = {
-  question: "",
+  question: '',
   question_type: QuestionType.SingleChoice,
   choices: [
     {
-      answer: "",
+      answer: '',
       is_correct: false
     },
     {
-      answer: "",
+      answer: '',
       is_correct: false
     }
   ]
 }
 
-if(props.currentQuestion) {
+if (props.currentQuestion) {
   question = ref(Object.assign({}, toRaw(props.currentQuestion)))
-  if(props.currentQuestion.question_type == QuestionType.SingleChoice) {
-    singleChoiceSelectedAnswerOption.value = toRaw(props.currentQuestion).choices.findIndex(choice => choice.is_correct)
+  if (props.currentQuestion.question_type == QuestionType.SingleChoice) {
+    singleChoiceSelectedAnswerOption.value = toRaw(props.currentQuestion).choices.findIndex(
+      (choice) => choice.is_correct
+    )
   }
 } else {
   question = ref(blankQuestion)
 }
 
 const addAnswer = () => {
-  question.value.choices.push({ answer: "", is_correct: false })
+  question.value.choices.push({ answer: '', is_correct: false })
 }
 const removeAnswer = (index: number) => {
   if (question.value.choices.length > 2) {
@@ -63,11 +65,11 @@ const emits = defineEmits<{
 const form: Ref<VForm | null> = ref(null)
 
 function checkTextLength(input: string): boolean | string {
-  if(!input || input.trim().length == 0) {
-    return "This field is required."
+  if (!input || input.trim().length == 0) {
+    return 'This field is required.'
   }
-  if(input.length > 200) {
-    return "This field must be 200 characters or less."
+  if (input.length > 200) {
+    return 'This field must be 200 characters or less.'
   }
   return true
 }
@@ -75,10 +77,10 @@ function checkTextLength(input: string): boolean | string {
 const titleRules = [(input: string) => checkTextLength(input)]
 
 function checkAnswerUnique(input: string): boolean | string {
-  const filteredAnswers = question.value.choices.filter(choice => choice.answer === input)
-  if(filteredAnswers.length <= 1) return true
+  const filteredAnswers = question.value.choices.filter((choice) => choice.answer === input)
+  if (filteredAnswers.length <= 1) return true
 
-  return "Answers must be unique."
+  return 'Answers must be unique.'
 }
 
 const answerRules = [
@@ -87,14 +89,14 @@ const answerRules = [
 ]
 
 function checkNumberCorrect(input: boolean): boolean | string {
-  if(question.value.question_type === QuestionType.SingleChoice) return true
+  if (question.value.question_type === QuestionType.SingleChoice) return true
 
-  const filteredAnswers = question.value.choices.filter(choice => choice.is_correct)
-  if(filteredAnswers.length < 1) {
-    return "One or more answers must be correct."
+  const filteredAnswers = question.value.choices.filter((choice) => choice.is_correct)
+  if (filteredAnswers.length < 1) {
+    return 'One or more answers must be correct.'
   }
-  if(filteredAnswers.length == question.value.choices.length) {
-    return "Not all answers can be correct."
+  if (filteredAnswers.length == question.value.choices.length) {
+    return 'Not all answers can be correct.'
   }
 
   return true
@@ -104,17 +106,17 @@ const correctRules = [(input: boolean) => checkNumberCorrect(input)]
 
 const resetAndHideDialog = () => {
   showDialog.value = false
-  if(!props.currentQuestion) {
+  if (!props.currentQuestion) {
     // We only want to reset the form for newly created questions
     form.value?.reset()
     question.value.question_type = QuestionType.SingleChoice
     question.value.choices = [
       {
-        answer: "",
+        answer: '',
         is_correct: false
       },
       {
-        answer: "",
+        answer: '',
         is_correct: false
       }
     ]
@@ -124,17 +126,18 @@ const resetAndHideDialog = () => {
 
 // This function is called when submitting the form
 const addQuestion = () => {
-  if(question.value.question_type == QuestionType.SingleChoice) {
-    question.value.choices.forEach((answer, index) => answer.is_correct = (index === singleChoiceSelectedAnswerOption.value))
+  if (question.value.question_type == QuestionType.SingleChoice) {
+    question.value.choices.forEach(
+      (answer, index) => (answer.is_correct = index === singleChoiceSelectedAnswerOption.value)
+    )
   }
   form.value?.validate().then((result) => {
-    if(result.valid) {
+    if (result.valid) {
       emits('questionEditingCompleted', JSON.parse(JSON.stringify(question.value)))
       resetAndHideDialog()
     }
   })
 }
-
 </script>
 
 <template>
@@ -165,7 +168,10 @@ const addQuestion = () => {
           </v-row>
           <v-row v-for="(choice, index) in question.choices" :key="index" no-gutters>
             <v-col cols="1" align-self="end">
-              <v-radio-group v-model="singleChoiceSelectedAnswerOption" v-if="question.question_type == QuestionType.SingleChoice">
+              <v-radio-group
+                v-model="singleChoiceSelectedAnswerOption"
+                v-if="question.question_type == QuestionType.SingleChoice"
+              >
                 <v-radio :value="index" />
               </v-radio-group>
               <v-checkbox v-model="choice.is_correct" :rules="correctRules" v-else></v-checkbox>

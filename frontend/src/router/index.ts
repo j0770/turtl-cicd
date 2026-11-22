@@ -1,6 +1,6 @@
 import { useUserStore } from '@/stores/UserStore'
 import AcceptInvitation from '@/views/general/AcceptInvitation.vue'
-import Imprint from '@/views/general/Imprint.vue'
+import ImprintView from '@/views/general/ImprintView.vue'
 import NotFound from '@/views/general/NotFound.vue'
 import PrivacyPolicy from '@/views/general/PrivacyPolicy.vue'
 import SignIn from '@/views/general/SignIn.vue'
@@ -62,7 +62,7 @@ const router = createRouter({
     {
       path: '/imprint',
       name: 'Imprint',
-      component: Imprint
+      component: ImprintView
     },
     {
       path: '/shell/popout/:taskId',

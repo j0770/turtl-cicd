@@ -1,18 +1,20 @@
 import logging
 import os
 
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from catalog.models import Task
-from .proxmox import ProxmoxManager, NoVlanAvailableError
-from .access import user_can_access_task_vm
-from .models import VirtualMachine, LabEnvironment, TaskVMConfiguration
-from .throttling import VMActionThrottle
-from django.utils import timezone
+
 from analytics.tracker import track
+from catalog.models import Task
+
+from .access import user_can_access_task_vm
+from .models import LabEnvironment, TaskVMConfiguration, VirtualMachine
+from .proxmox import NoVlanAvailableError, ProxmoxManager
+from .throttling import VMActionThrottle
 
 logger = logging.getLogger(__name__)
 
@@ -20,25 +22,25 @@ logger = logging.getLogger(__name__)
 def _forbidden_task_vm_access():
     return Response(
         {
-            'status': 'error',
-            'detail': 'You do not have access to VM resources for this task'
+            "status": "error",
+            "detail": "You do not have access to VM resources for this task",
         },
-        status=status.HTTP_403_FORBIDDEN
+        status=status.HTTP_403_FORBIDDEN,
     )
 
 
 def _internal_vm_error(detail: str, error_code: str):
     return Response(
         {
-            'status': 'error',
-            'detail': detail,
-            'error_code': error_code,
+            "status": "error",
+            "detail": detail,
+            "error_code": error_code,
         },
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([VMActionThrottle])
 def start_environment(request, task_id):
@@ -53,17 +55,21 @@ def start_environment(request, task_id):
             return _forbidden_task_vm_access()
 
         if user.is_student:
-            quota = int(os.environ.get('THROTTLE_USER_ACTIVE_LAB_ENV', '2'))
-            active_count = LabEnvironment.objects.filter(
-                user=user,
-                status__in=('provisioning', 'starting', 'active', 'degraded'),
-            ).exclude(task=task).count()
+            quota = int(os.environ.get("THROTTLE_USER_ACTIVE_LAB_ENV", "2"))
+            active_count = (
+                LabEnvironment.objects.filter(
+                    user=user,
+                    status__in=("provisioning", "starting", "active", "degraded"),
+                )
+                .exclude(task=task)
+                .count()
+            )
             if active_count >= quota:
                 return Response(
                     {
-                        'status': 'error',
-                        'detail': 'You have reached the maximum number of active lab environments. Stop another environment before starting a new one.',
-                        'error_code': 'LAB_ENV_QUOTA_EXCEEDED',
+                        "status": "error",
+                        "detail": "You have reached the maximum number of active lab environments. Stop another environment before starting a new one.",
+                        "error_code": "LAB_ENV_QUOTA_EXCEEDED",
                     },
                     status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
@@ -75,27 +81,41 @@ def start_environment(request, task_id):
         if not lab_env:
             lab_env, created = proxmox_manager.create_lab_environment(user, task)
             if created:
-                track('lab_created', user=user, task_id=task.id, lab_environment_id=lab_env.id)
-                return Response({
-                    'status': 'created',
-                    'message': 'Lab environment created and started successfully',
-                    'environment_id': lab_env.id
-                })
+                track(
+                    "lab_created",
+                    user=user,
+                    task_id=task.id,
+                    lab_environment_id=lab_env.id,
+                )
+                return Response(
+                    {
+                        "status": "created",
+                        "message": "Lab environment created and started successfully",
+                        "environment_id": lab_env.id,
+                    }
+                )
 
         started = proxmox_manager.start_environment(lab_env)
-        if (started):
-            track('lab_resumed', user=user, task_id=task.id, lab_environment_id=lab_env.id)
-            return Response({
-                'status': 'started',
-                'message': 'Lab environment started successfully',
-                'environment_id': lab_env.id
-            })
+        if started:
+            track(
+                "lab_resumed", user=user, task_id=task.id, lab_environment_id=lab_env.id
+            )
+            return Response(
+                {
+                    "status": "started",
+                    "message": "Lab environment started successfully",
+                    "environment_id": lab_env.id,
+                }
+            )
         else:
-            return Response({
-                'status': 'error',
-                'detail': 'VMs for LabEnvironment could not be started. Check Proxmox logs',
-                'environment_id': lab_env.id
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {
+                    "status": "error",
+                    "detail": "VMs for LabEnvironment could not be started. Check Proxmox logs",
+                    "environment_id": lab_env.id,
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     except NoVlanAvailableError:
         logger.warning(
@@ -105,9 +125,9 @@ def start_environment(request, task_id):
         )
         return Response(
             {
-                'status': 'error',
-                'detail': 'No network resources are currently available. Please try again later or contact an administrator.',
-                'error_code': 'NO_VLAN_AVAILABLE',
+                "status": "error",
+                "detail": "No network resources are currently available. Please try again later or contact an administrator.",
+                "error_code": "NO_VLAN_AVAILABLE",
             },
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
@@ -118,11 +138,12 @@ def start_environment(request, task_id):
             getattr(request.user, "id", None),
         )
         return _internal_vm_error(
-            detail='An unexpected error occurred while starting the lab environment.',
-            error_code='ENVIRONMENT_START_FAILED',
+            detail="An unexpected error occurred while starting the lab environment.",
+            error_code="ENVIRONMENT_START_FAILED",
         )
-    
-@api_view(['POST'])
+
+
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([VMActionThrottle])
 def stop_environment(request, task_id):
@@ -139,22 +160,24 @@ def stop_environment(request, task_id):
         lab_env = LabEnvironment.objects.filter(user=user, task=task).first()
 
         if not lab_env:
-            return Response({
-                'status': 'error',
-                'detail': 'No lab environment found for this task'
-            }, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {"status": "error", "detail": "No lab environment found for this task"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         proxmox_manager = ProxmoxManager()
         stopped = proxmox_manager.stop_environment(lab_env)
 
         if stopped:
-            track('lab_stopped', user=user, task_id=task.id, lab_environment_id=lab_env.id)
+            track(
+                "lab_stopped", user=user, task_id=task.id, lab_environment_id=lab_env.id
+            )
 
-        return Response({
-            'status': 'stopped',
-            'message': 'Lab environment stopped successfully'
-        }, status=status.HTTP_200_OK)
-    
+        return Response(
+            {"status": "stopped", "message": "Lab environment stopped successfully"},
+            status=status.HTTP_200_OK,
+        )
+
     except Exception:
         logger.exception(
             "Failed to stop lab environment for task_id=%s user_id=%s",
@@ -162,12 +185,12 @@ def stop_environment(request, task_id):
             getattr(request.user, "id", None),
         )
         return _internal_vm_error(
-            detail='An unexpected error occurred while stopping the lab environment.',
-            error_code='ENVIRONMENT_STOP_FAILED',
+            detail="An unexpected error occurred while stopping the lab environment.",
+            error_code="ENVIRONMENT_STOP_FAILED",
         )
 
-    
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([VMActionThrottle])
 def cleanup_environment(request, task_id):
@@ -175,43 +198,53 @@ def cleanup_environment(request, task_id):
     Stops and removes a lab environment for the current user and given task
     """
     try:
-        task = get_object_or_404(Task,  id=task_id)
+        task = get_object_or_404(Task, id=task_id)
         user = request.user
 
         if not user_can_access_task_vm(user, task):
             return _forbidden_task_vm_access()
-        
+
         lab_env = LabEnvironment.objects.filter(user=user, task=task).first()
         lab_env_id = lab_env.id if lab_env else None
 
         proxmox_manager = ProxmoxManager()
         cleanup_result = proxmox_manager.cleanup_environment(user, task)
 
-        if cleanup_result == 'deleted':
-            track('lab_deleted', user=user, task_id=task.id, lab_environment_id=lab_env_id)
-            return Response({
-                'status': 'deleted',
-                'message': 'Lab environment deleted successfully'
-            }, status=status.HTTP_200_OK)
+        if cleanup_result == "deleted":
+            track(
+                "lab_deleted", user=user, task_id=task.id, lab_environment_id=lab_env_id
+            )
+            return Response(
+                {
+                    "status": "deleted",
+                    "message": "Lab environment deleted successfully",
+                },
+                status=status.HTTP_200_OK,
+            )
 
-        if cleanup_result == 'not_found':
-            return Response({
-                'status': 'error',
-                'detail': 'No lab environment found for this task'
-            }, status=status.HTTP_404_NOT_FOUND)
+        if cleanup_result == "not_found":
+            return Response(
+                {"status": "error", "detail": "No lab environment found for this task"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-        if cleanup_result == 'locked':
-            return Response({
-                'status': 'error',
-                'detail': 'Cleanup is already in progress. Please retry shortly.'
-            }, status=status.HTTP_409_CONFLICT)
+        if cleanup_result == "locked":
+            return Response(
+                {
+                    "status": "error",
+                    "detail": "Cleanup is already in progress. Please retry shortly.",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
-        return Response({
-            'status': 'error',
-            'detail': 'Cleanup could not be completed right now. Please retry.',
-            'error_code': 'ENVIRONMENT_CLEANUP_RETRY',
-        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    
+        return Response(
+            {
+                "status": "error",
+                "detail": "Cleanup could not be completed right now. Please retry.",
+                "error_code": "ENVIRONMENT_CLEANUP_RETRY",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
     except Exception:
         logger.exception(
@@ -220,11 +253,12 @@ def cleanup_environment(request, task_id):
             getattr(request.user, "id", None),
         )
         return _internal_vm_error(
-            detail='An unexpected error occurred while cleaning up the lab environment.',
-            error_code='ENVIRONMENT_CLEANUP_FAILED',
+            detail="An unexpected error occurred while cleaning up the lab environment.",
+            error_code="ENVIRONMENT_CLEANUP_FAILED",
         )
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def environment_status(request, task_id):
     """
@@ -240,11 +274,13 @@ def environment_status(request, task_id):
         lab_env = LabEnvironment.objects.filter(user=user, task=task).first()
 
         if not lab_env:
-            return Response({
-                'status': 'not_created',
-                'message': 'No lab environment exists for this task'
-            })
-        
+            return Response(
+                {
+                    "status": "not_created",
+                    "message": "No lab environment exists for this task",
+                }
+            )
+
         # Synchronize VM status
         try:
             proxmox_manager = ProxmoxManager()
@@ -259,18 +295,20 @@ def environment_status(request, task_id):
             )
 
         lab_env.refresh_from_db()
-        
-        if lab_env.status in ('active', 'degraded'):
+
+        if lab_env.status in ("active", "degraded"):
             lab_env.last_seen_at = timezone.now()
-            lab_env.save(update_fields=['last_seen_at'])
-        
-        return Response({
-            'status': lab_env.status,
-            'environment_id': lab_env.id,
-            'created_at': lab_env.created_at,
-            'vm_count': lab_env.virtual_machines.count()
-        })
-    
+            lab_env.save(update_fields=["last_seen_at"])
+
+        return Response(
+            {
+                "status": lab_env.status,
+                "environment_id": lab_env.id,
+                "created_at": lab_env.created_at,
+                "vm_count": lab_env.virtual_machines.count(),
+            }
+        )
+
     except Exception:
         logger.exception(
             "Failed to retrieve environment status for task_id=%s user_id=%s",
@@ -278,11 +316,12 @@ def environment_status(request, task_id):
             getattr(request.user, "id", None),
         )
         return _internal_vm_error(
-            detail='An unexpected error occurred while fetching environment status.',
-            error_code='ENVIRONMENT_STATUS_FAILED',
+            detail="An unexpected error occurred while fetching environment status.",
+            error_code="ENVIRONMENT_STATUS_FAILED",
         )
-            
-@api_view(['POST'])
+
+
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def vnc_ticket(request, task_id):
     """
@@ -299,25 +338,30 @@ def vnc_ticket(request, task_id):
         vm = VirtualMachine.objects.filter(
             lab_environment__user=user,
             lab_environment__task=task,
-            template__purpose='USER_SHELL'
+            template__purpose="USER_SHELL",
         ).first()
 
         if not vm:
-            return Response({
-                'status': 'error',
-                'detail': 'No USER_SHELL VM found for this task/user'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {
+                    "status": "error",
+                    "detail": "No USER_SHELL VM found for this task/user",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         pm = ProxmoxManager()
         node = pm.get_vm_node(vm.vmid)
         ticket_data = pm.get_vm_console_ticket(node, vm.vmid)
 
-        return Response({
-            'status': 'ok',
-            'ticket': ticket_data['ticket'],
-            'port': ticket_data['port'],
-            'node': node,
-        })
+        return Response(
+            {
+                "status": "ok",
+                "ticket": ticket_data["ticket"],
+                "port": ticket_data["port"],
+                "node": node,
+            }
+        )
     except Exception:
         logger.exception(
             "Failed to get VNC ticket for task_id=%s user_id=%s",
@@ -325,11 +369,12 @@ def vnc_ticket(request, task_id):
             getattr(request.user, "id", None),
         )
         return _internal_vm_error(
-            detail='An unexpected error occurred while fetching the VNC ticket.',
-            error_code='VNC_TICKET_FAILED',
+            detail="An unexpected error occurred while fetching the VNC ticket.",
+            error_code="VNC_TICKET_FAILED",
         )
-    
-@api_view(['GET'])
+
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def has_task_vm_config(request, task_id: int):
     """
@@ -341,4 +386,3 @@ def has_task_vm_config(request, task_id: int):
 
     exists = TaskVMConfiguration.objects.filter(task_id=task_id).exists()
     return Response({"has_config": exists})
-            
