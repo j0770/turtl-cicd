@@ -1,6 +1,6 @@
 # CI-Prüfungen und Auswertung
 
-Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Pushes auf `main` und manuelle Aufrufe. Änderungen an der Anwendung werden nicht automatisch veröffentlicht oder bereitgestellt.
+Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Pushes auf `main` und manuelle Aufrufe. Nach erfolgreicher CI auf `main` veröffentlicht der Container-Workflow die geprüften Images in der privaten Registry. Die Anwendung wird dabei nicht bereitgestellt.
 
 ## Verpflichtende und beratende Prüfungen
 
@@ -17,6 +17,12 @@ Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Push
 Die Formatter prüfen den Bestand mit den versionierten Einstellungen. Die Frontend-Prüfung verwendet die mit `npm ci` installierte Prettier-Version. Für Python verwendet die CI die festgelegte Ruff-Version und die Ausschlüsse aus `ruff.toml`. Ein Formatverstoß lässt den jeweiligen CI-Job fehlschlagen. Ob dieser Status einen Merge verhindert, hängt von den Repository-Schutzregeln ab.
 
 Die breitere Regelprüfung bleibt beratend, weil sie Befunde enthält, die einzeln bewertet werden müssen. Beratende Prüfungen verwenden `continue-on-error`.
+
+## Testabdeckung
+
+Die CI misst die Abdeckung der vorhandenen Vitest- und Django-Tests. In der Zusammenfassung des Workflow-Laufs stehen die Messwerte. Die Artefakte `frontend-coverage` (HTML und JSON-Zusammenfassung) und `backend-coverage` (XML und JSON) enthalten die Berichte. Bei Testfehlern werden sie gesichert, soweit Messdaten vorliegen. Der Teststatus bleibt maßgeblich.
+
+Vitest erfasst JavaScript-, TypeScript- und Vue-Quellen unter `frontend/src/` einschließlich ungetesteter Dateien. Deklarations- und Testdateien sind ausgenommen. Lokaler Aufruf im Frontend: `npm run test:ci -- --coverage`. Die Backend-Abdeckung bezieht sich auf die im Workflow ausgewählten Django-Pakete und wird als Anweisungsabdeckung gemessen. Die beiden Bereiche werden separat ausgewertet. Ein Abdeckungswert ist kein Pflichtkriterium für die CI.
 
 ## Lokal prüfen
 
@@ -64,7 +70,7 @@ Ein grüner CI-Lauf bedeutet weder vollständige Testabdeckung noch erfolgreiche
 
 Fehler nur in einem separaten Validierungsbranch oder einer temporären Kopie einbringen und anschließend vollständig zurücknehmen. Geeignete Fälle sind ein TypeScript-Typfehler, eine fehlschlagende Testassertion, ein undefinierter Python-Name, eine fehlschlagende Django-Assertion und eine ungültige Compose-Eigenschaft. Für jeden Fall Ausgangscommit, genaue Änderung, erwarteten Fehler, tatsächlichen Status und Log sichern. Für Secret-Scans ausschließlich einen künstlichen, nicht funktionsfähigen Kontrollwert verwenden; niemals echte Zugangsdaten einbringen.
 
-Die Liste ist ein Prüfplan, kein Nachweis bereits durchgeführter Tests. Sicherheitsbefunde, CodeQL-Verfügbarkeit und Merge-Schutz benötigen eigene Nachweise. Release, SBOM, Backup und Deployment bleiben separate offene Arbeitspakete.
+Die Liste ist ein Prüfplan, kein Nachweis bereits durchgeführter Tests. Sicherheitsbefunde, CodeQL-Verfügbarkeit und Merge-Schutz benötigen eigene Nachweise. Die Container- und SBOM-Prüfungen sind in [Container-Delivery](container-delivery.md) beschrieben. Release, Backup und Deployment bleiben separate offene Arbeitspakete.
 
 
 ## Abhängigkeitsberichte
@@ -80,4 +86,3 @@ Befunde sind zunächst offen. Für eine Behebung sind Advisory, betroffene Versi
 Es gibt derzeit keine genehmigte pauschale Ausnahme oder behauptete vollständige Sicherheitsfreigabe. Ein späterer Ausnahmeeintrag braucht konkrete Kennung, Begründung, zuständige Person und erneuten Prüftermin. Fehlende CVSS-Daten werden nicht erfunden. Zur Auswahl von Aktualisierungen ist ein gesonderter, getesteter Änderungssatz erforderlich.
 
 Die [Befundauswertung vom 03.11.2026](dependency-findings-2026-11-03.md) ordnet den ersten vollständigen npm-/Python-Audit ein. Sie bleibt eine datierte Momentaufnahme.
-

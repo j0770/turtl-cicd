@@ -1,6 +1,6 @@
 # Private container delivery and SBOM
 
-`containers.yml` builds frontend and backend for Linux/amd64. Pull requests only build, smoke-check and generate SBOMs; they do not receive package write permission. Pushes on `main` and the explicitly listed temporary validation branch can promote the same built images to private GHCR packages after a successful CI run for the exact source commit. Workflow dispatch performs build-only validation.
+`containers.yml` builds frontend and backend for Linux/amd64. Pull requests only build, smoke-check and generate SBOMs; they do not receive package write permission. Pushes on `main` can promote the same built images to private GHCR packages after a successful CI run for the exact source commit. Workflow dispatch performs build-only validation.
 
 Images are transferred between jobs as SHA-256-checked Docker archives. Publication does not rebuild them. A complete commit-based tag is used; existing tags are not overwritten. The registry digest is pulled back and the config digest, runtime configuration and rootfs layer IDs must match the built archive. Consumers should use the recorded digest, not assume that a tag is an immutable registry object.
 
@@ -8,7 +8,7 @@ Images are transferred between jobs as SHA-256-checked Docker archives. Publicat
 
 Images must remain private. Publication first requires a private repository with a personal-account owner. An existing package must report `visibility: private`; public packages, permission errors and unknown states stop publication. A 404 permits first creation because new personal GHCR packages are private by default. Immediately after pushing, the package API must again report private. The workflow never changes visibility. It publishes only to `ghcr.io/j0770/turtl-cicd-private/{frontend,backend}`. Authentication uses the short-lived repository `GITHUB_TOKEN`; no personal publishing token is stored.
 
-References: [GitHub registry defaults](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility). The temporary validation branch uses `validation-sha-<full commit>` tags; these are not production releases. No deployment, public image or public repository is created by the workflow.
+References: [GitHub registry defaults](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility). No deployment, public image or public repository is created by the workflow.
 
 ## Runtime configuration and packaging
 

@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, codex/ci-validierung-2026-11-03]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -106,7 +106,7 @@ jobs:
 
   publish-private:
     name: Private registry (${{ matrix.component }})
-    if: ${{ github.event_name == 'push' && github.repository == 'j0770/turtl-cicd' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'j0770/turtl-cicd' }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -169,9 +169,8 @@ jobs:
           python -m pip install jsonschema==4.25.1
           python scripts/record_container_evidence.py --directory evidence --component "$COMPONENT" --commit "$SOURCE_COMMIT" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/turtl-cicd-private/$COMPONENT"
-          if [ "$GITHUB_REF" = refs/heads/main ]; then prefix=sha; else prefix=validation-sha; fi
           echo "IMAGE=$image" >> "$GITHUB_ENV"
-          echo "IMAGE_TAG=$prefix-$SOURCE_COMMIT" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=sha-$SOURCE_COMMIT" >> "$GITHUB_ENV"
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io

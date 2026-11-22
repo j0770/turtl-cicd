@@ -50,7 +50,7 @@ jobs:
         run: npm run type-check
 
       - name: Run unit tests
-        run: npm run test:ci -- --reporter=default --reporter=junit --outputFile=test-results.xml
+        run: npm run test:ci -- --coverage --reporter=default --reporter=junit --outputFile=test-results.xml
 
       - name: Upload frontend test results
         if: ${{ !cancelled() && hashFiles('frontend/test-results.xml') != '' }}
@@ -58,6 +58,29 @@ jobs:
         with:
           name: frontend-tests
           path: frontend/test-results.xml
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Summarize frontend coverage
+        if: ${{ !cancelled() && hashFiles('frontend/coverage/coverage-summary.json') != '' }}
+        run: |
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const { total } = JSON.parse(require('node:fs').readFileSync('coverage/coverage-summary.json', 'utf8'))
+          console.log('### Frontend coverage (Vitest)')
+          console.log('| Metric | Covered | Total | Coverage |')
+          console.log('| --- | ---: | ---: | ---: |')
+          for (const name of ['lines', 'branches', 'functions', 'statements']) {
+            const { covered, total: count, pct } = total[name]
+            console.log('| ' + name + ' | ' + covered + ' | ' + count + ' | ' + pct + '% |')
+          }
+          NODE
+
+      - name: Upload frontend coverage report
+        if: ${{ !cancelled() && hashFiles('frontend/coverage/coverage-summary.json') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
           if-no-files-found: error
           retention-days: 90
 
@@ -149,6 +172,10 @@ jobs:
           coverage report --show-missing
           coverage xml
           coverage json
+          {
+            echo '### Backend coverage (Django)'
+            coverage report --format=markdown
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload backend coverage report
         if: ${{ !cancelled() && hashFiles('coverage.xml') != '' }}
