@@ -1,7 +1,7 @@
 # Based on the official docker guide: https://docs.docker.com/guides/vuejs/containerize
 # Stage 1: Build the Vue.js
 
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
