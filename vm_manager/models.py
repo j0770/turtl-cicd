@@ -1,8 +1,9 @@
-from django.utils import timezone
-from django.db import models
 from django.conf import settings
-from catalog.models import Task
 from django.core.validators import validate_ipv4_address
+from django.db import models
+from django.utils import timezone
+
+from catalog.models import Task
 
 
 # Network Instance

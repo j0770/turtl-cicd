@@ -3,14 +3,14 @@ from django.core.management import BaseCommand
 
 from authentication.models import User
 from catalog.models import (
+    AcceptanceCriteria,
     Classroom,
     ClassroomInstructor,
+    HelpfulResource,
     Project,
     Question,
-    Task,
     QuestionChoice,
-    AcceptanceCriteria,
-    HelpfulResource,
+    Task,
 )
 from enrollments.models import Enrollment
 

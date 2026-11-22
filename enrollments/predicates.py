@@ -1,4 +1,5 @@
 import rules
+
 from catalog.predicates import manages_classroom
 
 

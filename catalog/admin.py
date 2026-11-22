@@ -1,15 +1,16 @@
 from django.contrib import admin
+
 from .models import (
+    AcceptanceCriteria,
     Classroom,
     ClassroomInstructor,
+    Flag,
+    HelpfulResource,
     Project,
-    Task,
-    AcceptanceCriteria,
     Question,
     QuestionChoice,
-    HelpfulResource,
     Regex,
-    Flag,
+    Task,
 )
 
 # Register your models here.

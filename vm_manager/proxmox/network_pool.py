@@ -1,7 +1,9 @@
 import logging
+
 from django.db import transaction
-from ..utils import AdvisoryLock, slugify
+
 from ..models import Network
+from ..utils import AdvisoryLock, slugify
 
 logger = logging.getLogger(__name__)
 

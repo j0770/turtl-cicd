@@ -5,7 +5,7 @@ from rules.contrib.models import RulesModel
 from authentication.models import User
 from authentication.predicates import is_instructor
 from catalog.models import Classroom, Task
-from enrollments.predicates import owns_enrollment, manages_enrollment_classroom
+from enrollments.predicates import manages_enrollment_classroom, owns_enrollment
 
 
 class Enrollment(RulesModel):

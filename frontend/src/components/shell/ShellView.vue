@@ -87,7 +87,9 @@ async function toggleTyping() {
     try {
       r.sendKey(ALTGR_KEYSYM, 'AltRight', false)
       r.sendKey(SHIFT_KEYSYM, 'ShiftLeft', false)
-    } catch {}
+    } catch {
+      // The remote session may already be disconnected.
+    }
     isTyping.value = false
     cancelTyping = false
   }

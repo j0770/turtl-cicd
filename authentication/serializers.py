@@ -1,19 +1,18 @@
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from rest_framework import serializers
-from rest_framework.serializers import ValidationError
-from rest_framework.exceptions import PermissionDenied
 import rest_framework_simplejwt.settings
+from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.serializers import ValidationError
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.exceptions import AuthenticationFailed
 
 from analytics.tracker import track
 
-from .models import User, Invitation
+from .models import Invitation, User
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):

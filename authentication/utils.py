@@ -1,8 +1,9 @@
 import secrets
 import string
 
-from authentication.models import User
 from django.core.mail import send_mail
+
+from authentication.models import User
 
 
 class Util:

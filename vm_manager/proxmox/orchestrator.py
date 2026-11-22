@@ -1,12 +1,14 @@
-import os
 import logging
+import os
+
 from django.db import transaction
 from django.utils import timezone
-from ..utils import AdvisoryLock, slugify, format_ip
+
 from ..models import LabEnvironment, Network, TaskVMConfiguration, VirtualMachine
+from ..utils import AdvisoryLock, format_ip, slugify
 from .client import ProxmoxClient
+from .network_pool import NoVlanAvailableError, provision_network, release_network
 from .vm_ops import clone_vm, configure_vm, wait_for_unlock, wait_for_vm_stopped
-from .network_pool import provision_network, release_network, NoVlanAvailableError
 
 logger = logging.getLogger(__name__)
 

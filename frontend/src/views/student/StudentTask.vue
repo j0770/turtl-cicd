@@ -214,7 +214,7 @@ function submitSolution() {
       </v-container>
       <v-container>
         <v-form @submit.prevent="submitSolution">
-          <v-row v-for="flag in task.acceptance_criteria.flags">
+          <v-row v-for="flag in task.acceptance_criteria.flags" :key="flag.id">
             <v-col>
               <v-card color="cardColor">
                 <v-card-title>{{ flag.prompt }}</v-card-title>
@@ -237,7 +237,7 @@ function submitSolution() {
             class="mt-4 mb-4"
             v-if="task.acceptance_criteria.flags && task.acceptance_criteria.flags.length > 0"
           />
-          <v-row v-for="regex in task.acceptance_criteria.regexes">
+          <v-row v-for="regex in task.acceptance_criteria.regexes" :key="regex.id">
             <v-col>
               <v-card color="cardColor">
                 <v-card-title>{{ regex.prompt }}</v-card-title>
@@ -260,7 +260,11 @@ function submitSolution() {
             v-if="task.acceptance_criteria.regexes && task.acceptance_criteria.regexes.length > 0"
             class="mt-4 mb-4"
           />
-          <v-row v-for="question in task.acceptance_criteria.questions" ref="questions">
+          <v-row
+            v-for="question in task.acceptance_criteria.questions"
+            :key="question.id"
+            ref="questions"
+          >
             <v-col>
               <v-card color="cardColor">
                 <v-card-title>{{ question.question }}</v-card-title>
@@ -269,7 +273,7 @@ function submitSolution() {
                 </v-card-subtitle>
                 <v-card-subtitle v-else> Select the correct answers </v-card-subtitle>
                 <v-card-text>
-                  <div v-for="choice in question.choices">
+                  <div v-for="choice in question.choices" :key="choice.id">
                     <v-radio-group
                       v-if="question.question_type == QuestionType.SingleChoice"
                       :model-value="getSingleChoiceSelectedAnswerOption(question.id)"
@@ -286,7 +290,8 @@ function submitSolution() {
                     icon="false"
                     type="error"
                     density="compact"
-                    v-for="error in getQuestionErrors(question.id)"
+                    v-for="(error, index) in getQuestionErrors(question.id)"
+                    :key="index"
                   >
                     {{ error }}
                   </v-alert>

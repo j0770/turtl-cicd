@@ -1,7 +1,7 @@
 import os
 
-from django.core.checks import Error, register
 from django.conf import settings
+from django.core.checks import Error, register
 
 REQUIRED_ENV_VARS = [
     "VM_MANAGER_LOG_LEVEL",

@@ -1,13 +1,13 @@
 from django.urls import path
 
 from .views import (
-    ProjectViewSet,
-    ProjectDetailViewSet,
-    TaskViewSet,
-    TaskDetailViewSet,
-    ClassroomViewSet,
     ClassroomDetailViewSet,
+    ClassroomViewSet,
     MyClassroomsViewSet,
+    ProjectDetailViewSet,
+    ProjectViewSet,
+    TaskDetailViewSet,
+    TaskViewSet,
 )
 
 app_name = "catalog"

@@ -1,27 +1,30 @@
 from django.db.models import Q
 from rest_framework import status
+from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.viewsets import ModelViewSet
-from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-from turtl.utils.permissions import AutoPermissionViewSetWithListMixin
-
-from analytics.tracker import track
-from .models import User, Invitation
-from .serializers import (
-    ProfileUpdateSerializer,
-    LoginRefreshSerializer,
-    InvitationSerializer,
-    AcceptInvitationSerializer,
-    BulkInvitationSerializer,
-    UserSerializer,
+from rest_framework_simplejwt.views import (
+    TokenBlacklistView,
+    TokenObtainPairView,
+    TokenRefreshView,
 )
 
+from analytics.tracker import track
+from turtl.utils.permissions import AutoPermissionViewSetWithListMixin
+
+from .models import Invitation, User
+from .serializers import (
+    AcceptInvitationSerializer,
+    BulkInvitationSerializer,
+    InvitationSerializer,
+    LoginRefreshSerializer,
+    ProfileUpdateSerializer,
+    UserSerializer,
+)
 from .throttling import LoginIPThrottle, LoginUsernameThrottle
 
 

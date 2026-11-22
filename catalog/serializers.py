@@ -9,16 +9,16 @@ from rest_framework import serializers
 from authentication.models import User
 from authentication.serializers import UserSerializer
 from catalog.models import (
-    Classroom,
-    Project,
-    ClassroomInstructor,
-    HelpfulResource,
-    Task,
     AcceptanceCriteria,
+    Classroom,
+    ClassroomInstructor,
+    Flag,
+    HelpfulResource,
+    Project,
     Question,
     QuestionChoice,
     Regex,
-    Flag,
+    Task,
 )
 from catalog.predicates import manages_classroom, manages_project
 

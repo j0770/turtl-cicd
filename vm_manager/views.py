@@ -1,18 +1,20 @@
 import logging
 import os
 
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from catalog.models import Task
-from .proxmox import ProxmoxManager, NoVlanAvailableError
-from .access import user_can_access_task_vm
-from .models import VirtualMachine, LabEnvironment, TaskVMConfiguration
-from .throttling import VMActionThrottle
-from django.utils import timezone
+
 from analytics.tracker import track
+from catalog.models import Task
+
+from .access import user_can_access_task_vm
+from .models import LabEnvironment, TaskVMConfiguration, VirtualMachine
+from .proxmox import NoVlanAvailableError, ProxmoxManager
+from .throttling import VMActionThrottle
 
 logger = logging.getLogger(__name__)
 

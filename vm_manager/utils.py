@@ -1,7 +1,8 @@
 import hashlib
 import re
-import unicodedata
 import time
+import unicodedata
+
 from django.db import connection, utils
 
 

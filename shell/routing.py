@@ -1,4 +1,5 @@
 from django.urls import re_path
+
 from . import vm_console_consumer
 
 websocket_urlpatterns = [

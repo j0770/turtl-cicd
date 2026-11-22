@@ -42,8 +42,7 @@ jobs:
       - name: Check frontend formatting
         run: npm run format:check
 
-      - name: Lint source code (advisory)
-        continue-on-error: true
+      - name: Lint frontend source code
         run: npm run lint:check
 
       - name: Check TypeScript and Vue types
@@ -151,9 +150,9 @@ jobs:
       - name: Run Django system checks
         run: python manage.py check
 
-      - name: Check Python for correctness errors
+      - name: Check Python correctness and import order
         # B rules remain in the advisory lint step until existing findings are addressed.
-        run: ruff check --select E9,F63,F7,F82,F821,F811 .
+        run: ruff check --select E9,F63,F7,F82,F821,F811,I001 .
 
       - name: Lint Python source code (advisory)
         continue-on-error: true

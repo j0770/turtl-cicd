@@ -6,8 +6,8 @@ Die Workflows unter `.github/workflows/` prüfen Pull Requests nach `main`, Push
 
 | Bereich | Verpflichtend | Beratend |
 |---|---|---|
-| Frontend | `npm ci`, Prettier für `src/`, Typprüfung, Vitest, Produktions-Build | ESLint |
-| Backend | Django-Systemprüfung, Ruff `E9,F63,F7,F82,F821,F811`, Ruff-Formatprüfung, Django-Tests | Breite Ruff-Regeln einschließlich B/S |
+| Frontend | `npm ci`, Prettier für `src/`, ESLint-Fehler, Typprüfung, Vitest, Produktions-Build | ESLint-Warnungen |
+| Backend | Django-Systemprüfung, Ruff `E9,F63,F7,F82,F821,F811,I001`, Ruff-Formatprüfung, Django-Tests | Breite Ruff-Regeln einschließlich Zeilenlänge (`E501`) und B/S |
 | Infrastruktur | Compose-Konfigurationsprüfung | – |
 | Secrets | Gitleaks | – |
 | Abhängigkeiten | – | Python mit pip-audit; Frontend-Lockdatei mit npm audit einschließlich Entwicklungswerkzeugen |
@@ -45,7 +45,7 @@ Für das Backend die Testumgebung gemäß Entwicklungsanleitung mit separater Po
 python -m pip install -r requirements.txt
 python -m pip install coverage==7.16.0 ruff==0.16.6
 python manage.py check
-ruff check --select E9,F63,F7,F82,F821,F811 .
+ruff check --select E9,F63,F7,F82,F821,F811,I001 .
 ruff check .
 ruff format --check .
 coverage run --source=analytics,authentication,catalog,enrollments,seeder,shell,turtl,vm_manager manage.py test

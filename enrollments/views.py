@@ -4,24 +4,23 @@ from django.db.models import Prefetch
 from rest_framework import status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.generics import get_object_or_404, GenericAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from catalog.models import Classroom
-from catalog.models import Task, QuestionChoice
+from analytics.tracker import track
+from catalog.models import Classroom, QuestionChoice, Task
 from catalog.predicates import manages_classroom
-from .models import Enrollment
-from .models import TaskSolution
+
+from .models import Enrollment, TaskSolution
 from .serializers import (
-    EnrollmentSerializer,
     EnrollmentDetailSerializer,
+    EnrollmentSerializer,
     EnrollmentUserSerializer,
     TaskSubmissionSerializer,
 )
-from analytics.tracker import track
 
 
 class EnrollmentViewSet(ModelViewSet):

@@ -2,14 +2,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from catalog.models import Classroom, Task, Project, ClassroomInstructor
+from catalog.models import Classroom, ClassroomInstructor, Project, Task
 from catalog.serializers import (
+    ClassroomDetailSerializer,
     ClassroomSerializer,
     ProjectDetailSerializer,
-    TaskSerializer,
-    ClassroomDetailSerializer,
     ProjectNewSerializer,
     TaskNewSerializer,
+    TaskSerializer,
 )
 
 

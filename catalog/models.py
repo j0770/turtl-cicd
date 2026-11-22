@@ -1,10 +1,12 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from rules import is_authenticated
 from rules.contrib.models import RulesModel
-from .predicates import manages_classroom, manages_project, manages_task
+
 from authentication.models import User
 from authentication.predicates import is_instructor
-from django.utils.translation import gettext_lazy as _
+
+from .predicates import manages_classroom, manages_project, manages_task
 
 
 class Regex(models.Model):

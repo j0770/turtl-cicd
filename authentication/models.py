@@ -17,7 +17,6 @@ from rules.contrib.models import RulesModel
 from authentication.emails import send_invitation_email
 from authentication.predicates import is_instructor, issued_invitation
 
-
 # This file defines the models used during authentication.
 # A model can be stored inside the database.
 # Changes to this file require a new migration.

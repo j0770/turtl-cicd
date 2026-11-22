@@ -9,10 +9,11 @@ import websockets
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.core.cache import cache
+
 from catalog.models import Task
-from vm_manager.proxmox import ProxmoxManager
 from vm_manager.access import user_can_access_task_vm
 from vm_manager.models import VirtualMachine
+from vm_manager.proxmox import ProxmoxManager
 
 logger = logging.getLogger("vm_manager.console")
 

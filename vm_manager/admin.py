@@ -1,12 +1,13 @@
 from django.contrib import admin
+
 from .models import (
+    LabEnvironment,
     Network,
-    VMTemplate,
     NetworkTemplate,
     TaskVMConfiguration,
     TaskVMTemplate,
-    LabEnvironment,
     VirtualMachine,
+    VMTemplate,
 )
 
 

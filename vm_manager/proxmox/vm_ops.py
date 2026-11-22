@@ -1,5 +1,6 @@
-import time
 import logging
+import time
+
 from proxmoxer.core import ResourceException
 
 logger = logging.getLogger(__name__)

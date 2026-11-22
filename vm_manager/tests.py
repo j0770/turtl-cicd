@@ -2,32 +2,33 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
 
 from django.core.cache import cache
-from django.test import TestCase, override_settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from authentication.models import User
 from catalog.models import (
+    AcceptanceCriteria,
     Classroom,
     ClassroomInstructor,
     Project,
     Task,
-    AcceptanceCriteria,
 )
 from enrollments.models import Enrollment
+
+from .access import user_can_access_task_vm
 from .models import (
+    LabEnvironment,
     Network,
-    VMTemplate,
     NetworkTemplate,
     TaskVMConfiguration,
     TaskVMTemplate,
-    LabEnvironment,
     VirtualMachine,
+    VMTemplate,
 )
-from .access import user_can_access_task_vm
 from .proxmox import NoVlanAvailableError, ProxmoxManager
 from .utils import AdvisoryLock
 

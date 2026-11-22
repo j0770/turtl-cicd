@@ -1,16 +1,14 @@
+import logging
 import os
 from datetime import timedelta
-import logging
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
-from django.db.models import Q
-
+from analytics.tracker import track
 from vm_manager.models import LabEnvironment
 from vm_manager.proxmox import ProxmoxManager
-
-from analytics.tracker import track
 
 logger = logging.getLogger(__name__)
 

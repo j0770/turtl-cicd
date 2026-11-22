@@ -5,11 +5,12 @@ from rest_framework.fields import SerializerMethodField
 from authentication.serializers import UserSerializer
 from catalog.models import Classroom, Project, Task
 from catalog.serializers import (
-    ClassroomSerializer,
     ClassroomDetailSerializer,
+    ClassroomSerializer,
     ProjectDetailSerializer,
     TaskSerializer,
 )
+
 from .models import Enrollment, TaskSolution
 
 

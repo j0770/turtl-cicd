@@ -1,16 +1,16 @@
 from django.urls import path
 
 from .views import (
-    ProfileUpdateView,
-    LoginRefreshView,
-    InvitationViewSet,
     AcceptInvitationView,
-    RenewInvitationView,
-    MyInvitationsViewSet,
     BulkInvitationViewSet,
     InstructorViewSet,
-    LogoutView,
+    InvitationViewSet,
+    LoginRefreshView,
     LoginView,
+    LogoutView,
+    MyInvitationsViewSet,
+    ProfileUpdateView,
+    RenewInvitationView,
 )
 
 app_name = "authentication"
