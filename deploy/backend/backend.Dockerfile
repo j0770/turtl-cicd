@@ -1,5 +1,5 @@
 # 1. Build stage
-FROM python:3.12-slim AS builder
+FROM python:3.15-slim AS builder
 
 RUN mkdir /app
 
@@ -15,7 +15,7 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 2. Production stage
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 RUN useradd -m -r appuser && \
     mkdir /app && \
