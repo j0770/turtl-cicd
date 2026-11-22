@@ -7,4 +7,4 @@ Twisted>=24.7.0
 certifi>=2024.7.4
 idna>=3.7
 pyasn1>=0.6.3
-sqlparse>=0.5.4
+sqlparse>=0.6.1
