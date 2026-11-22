@@ -102,7 +102,7 @@ pyjwt==2.12.1
     # via djangorestframework-simplejwt
 pyopenssl==26.1.0
     # via twisted
-python-dotenv==1.2.2
+python-dotenv==1.2.4
     # via -r requirements.in
 redis==7.4.0
     # via channels-redis
