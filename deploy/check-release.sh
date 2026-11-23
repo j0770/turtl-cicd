@@ -3,7 +3,7 @@ set -euo pipefail
 umask 077
 
 : "${STATE_DIRECTORY:?Set STATE_DIRECTORY to a writable deployment state directory}"
-release_url=https://github.com/j0770/turtl-cicd/releases/latest/download/deployment.json
+release_url=${TURTL_RELEASE_URL:-https://github.com/j0770/turtl-cicd/releases/latest/download/deployment.json}
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 exec 9>"$STATE_DIRECTORY/check-release.lock"

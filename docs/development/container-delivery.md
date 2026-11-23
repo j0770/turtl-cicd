@@ -44,7 +44,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now turtl-deploy.timer
 ```
 
-The timer checks the latest release every five minutes after each completed check. A different image pair triggers the deployment script. The service records the manifest in `/var/lib/turtl-deploy/deployment.json` after the script succeeds. Inspect runs with `journalctl -u turtl-deploy.service`.
+The timer checks the latest release every five minutes after each completed check. A different image pair triggers the deployment script. The service records the manifest in `/var/lib/turtl-deploy/deployment.json` after the script succeeds. Inspect runs with `journalctl -u turtl-deploy.service`. An isolated test VM can set `TURTL_RELEASE_URL` to a trusted HTTPS endpoint serving its own test manifest.
 
 ### Rollback
 
