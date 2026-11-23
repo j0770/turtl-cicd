@@ -1,5 +1,8 @@
 services:
+  ofelia:
+    restart: unless-stopped
   frontend:
+    restart: unless-stopped
     build: !reset null
     image: ${TURTL_FRONTEND_IMAGE:?Set TURTL_FRONTEND_IMAGE to the published image digest}
   backend:
