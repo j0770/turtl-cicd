@@ -1,0 +1,69 @@
+name: Prepare deployment release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable release tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+      commit:
+        description: Full SHA of the successfully published main commit
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: prepare-deployment-release
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_COMMIT: ${{ inputs.commit }}
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Assemble the release from verified GHCR evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! $SOURCE_COMMIT =~ ^[0-9a-f]{40}$ || ! $RELEASE_VERSION =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo 'Expected a full commit SHA and a stable vMAJOR.MINOR.PATCH release tag.' >&2
+            exit 2
+          fi
+
+          repo="repos/$GITHUB_REPOSITORY"
+          run_id=$(gh api --method GET "$repo/actions/workflows/containers.yml/runs" -f branch=main -f event=push -f status=success -f head_sha="$SOURCE_COMMIT" --jq '.workflow_runs[0].id // empty')
+          if [[ -z $run_id ]]; then
+            echo "No successful container publication found for $SOURCE_COMMIT." >&2
+            exit 1
+          fi
+
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --pattern 'published-*' --dir artifacts
+          for component in frontend backend; do
+            jq -er --arg commit "$SOURCE_COMMIT" --arg component "$component" '
+              select(.commit == $commit and .component == $component and .cyclonedx_schema_valid == true)
+              | .registry_ref
+              | select(test("^ghcr[.]io/j0770/(turtl|turtl-cicd-private)/" + $component + "@sha256:[0-9a-f]{64}$"))
+            ' "artifacts/published-$component/evidence/evidence.json" > "$component.ref"
+          done
+
+          jq -n --arg commit "$SOURCE_COMMIT" --arg version "$RELEASE_VERSION" --argjson publish_run_id "$run_id" --arg frontend "$(cat frontend.ref)" --arg backend "$(cat backend.ref)" '
+            {schema_version: 1, commit: $commit, version: $version, publish_run_id: $publish_run_id,
+             images: {frontend: $frontend, backend: $backend}}
+          ' > deployment.json
+
+          if git ls-remote --exit-code --refs "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/tags/$RELEASE_VERSION"; then
+            echo 'This release tag already exists.' >&2
+            exit 1
+          else
+            status=$?
+            if [[ $status -ne 2 ]]; then exit "$status"; fi
+          fi
+
+          gh release create "$RELEASE_VERSION" deployment.json --repo "$GITHUB_REPOSITORY" --draft --target "$SOURCE_COMMIT" --title "$RELEASE_VERSION" --notes "Verified images from $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id."

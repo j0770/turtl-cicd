@@ -143,7 +143,7 @@ jobs:
           exit 1
       - name: Check GHCR package destination
         run: |
-          package="turtl-cicd-private/$COMPONENT"
+          package="turtl/$COMPONENT"
           encoded=$(jq -rn --arg value "$package" '$value|@uri')
           endpoint="users/${GITHUB_REPOSITORY_OWNER}/packages/container/$encoded"
           echo "PACKAGE_ENDPOINT=$endpoint" >> "$GITHUB_ENV"
@@ -168,7 +168,7 @@ jobs:
           docker image inspect "turtl-$COMPONENT:build" > evidence/image-inspect.json
           python -m pip install jsonschema==4.25.1
           python scripts/record_container_evidence.py --directory evidence --component "$COMPONENT" --commit "$SOURCE_COMMIT" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/turtl-cicd-private/$COMPONENT"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/turtl/$COMPONENT"
           echo "IMAGE=$image" >> "$GITHUB_ENV"
           echo "IMAGE_TAG=sha-$SOURCE_COMMIT" >> "$GITHUB_ENV"
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0

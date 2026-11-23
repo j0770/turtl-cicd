@@ -1,0 +1,13 @@
+[Unit]
+Description=Check for a TURTL release and deploy its images
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=turtl-deploy
+StateDirectory=turtl-deploy
+StateDirectoryMode=0700
+EnvironmentFile=/etc/turtl/deployment.env
+ExecStart=/bin/bash /opt/turtl/deploy/check-release.sh
