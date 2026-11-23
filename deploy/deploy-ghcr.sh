@@ -40,7 +40,7 @@ done
 
 "${compose[@]}" pull frontend backend
 "${compose[@]}" up -d --no-recreate --wait postgres redis
-"${compose[@]}" exec -T postgres sh -ec +  'exec pg_dump --format=custom --username "$POSTGRES_USER" --dbname "$POSTGRES_DB"' +  > "$record_dir/postgres.dump.partial"
+"${compose[@]}" exec -T postgres sh -ec 'exec pg_dump --format=custom --username "$POSTGRES_USER" --dbname "$POSTGRES_DB"' > "$record_dir/postgres.dump.partial"
 test -s "$record_dir/postgres.dump.partial"
 "${compose[@]}" exec -T postgres pg_restore --list < "$record_dir/postgres.dump.partial" > /dev/null
 mv -- "$record_dir/postgres.dump.partial" "$record_dir/postgres.dump"
@@ -52,7 +52,7 @@ mv -- "$record_dir/postgres.dump.partial" "$record_dir/postgres.dump"
 base_url=${TURTL_BASE_URL%/}
 curl --fail --silent --show-error --max-time 15 --retry 3 "$base_url/" -o "$record_dir/frontend.html"
 grep -Fq 'id="app"' "$record_dir/frontend.html"
-curl --fail --silent --show-error --max-time 15 --retry 3 +  "$base_url/django-admin/login/" -o "$record_dir/backend.html"
+curl --fail --silent --show-error --max-time 15 --retry 3 "$base_url/django-admin/login/" -o "$record_dir/backend.html"
 grep -Fq 'name="csrfmiddlewaretoken"' "$record_dir/backend.html"
 rm -- "$record_dir/frontend.html" "$record_dir/backend.html"
 

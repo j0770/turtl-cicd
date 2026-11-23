@@ -30,7 +30,25 @@ bash deploy/deploy-ghcr.sh "$frontend_digest_ref" "$backend_digest_ref"
 
 The script uses the existing Compose services and the `compose.ghcr.yaml` overrides. It records the current frontend and backend images, pulls the selected images, makes a PostgreSQL dump and checks its archive listing before running migrations and collecting static assets. It then starts the stack and checks the frontend and Django admin over HTTPS. The backup directory also holds the selected image references after a successful deployment.
 
-For a rollback with a compatible database schema, set `TURTL_FRONTEND_IMAGE` and `TURTL_BACKEND_IMAGE` to the previous digest references. In the deployment directory, use `docker compose --env-file .env -f docker-compose.yaml -f compose.ghcr.yaml pull frontend backend` followed by `docker compose --env-file .env -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --wait`. Decide separately whether recovery requires restoring the database backup.
+### Release and automatic deployment
+
+From `main`, run **Prepare deployment release** with a stable version tag and the full commit SHA of a successful Container delivery run. The workflow verifies both publication records and attaches `deployment.json` to a draft GitHub Release. Review the draft and publish it as the latest release to approve deployment. The public release asset contains the two digest references and their source commit and run ID.
+
+On the target VM, install `jq` and copy the deployment configuration to `/opt/turtl/deploy`. The systemd service runs as `turtl-deploy`. Give this account access to Docker, the local deployment configuration, the backups directory and both GHCR packages. Configure the registry login for this account so the service can pull the images.
+
+Set `TURTL_BASE_URL` and `TURTL_BACKUP_DIR` in `/etc/turtl/deployment.env`. Install the units and start the timer after the first release is published:
+
+```bash
+sudo install -m 0644 deploy/systemd/turtl-deploy.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now turtl-deploy.timer
+```
+
+The timer checks the latest release every five minutes after each completed check. A different image pair triggers the deployment script. The service records the manifest in `/var/lib/turtl-deploy/deployment.json` after the script succeeds. Inspect runs with `journalctl -u turtl-deploy.service`.
+
+### Rollback
+
+Stop `turtl-deploy.timer` before a manual rollback and let any active deployment finish. With a compatible database schema, set `TURTL_FRONTEND_IMAGE` and `TURTL_BACKEND_IMAGE` to the previous digest references. In the deployment directory, use `docker compose --env-file .env -f docker-compose.yaml -f compose.ghcr.yaml pull frontend backend` followed by `docker compose --env-file .env -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --wait`. Decide separately whether recovery requires restoring the database backup. Before resuming the timer, make the desired release the latest release and remove the saved deployment manifest so the next check reconciles the recorded and running versions.
 
 ## Actual checks and SBOM scope
 
