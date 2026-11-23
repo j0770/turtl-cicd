@@ -6,7 +6,7 @@ Images are transferred between jobs as SHA-256-checked Docker archives. Publicat
 
 ## Package visibility
 
-The workflow accepts both private and public GHCR packages and records package metadata before and after each push. It publishes to the existing package paths `ghcr.io/j0770/turtl-cicd-private/{frontend,backend}` using the short-lived repository `GITHUB_TOKEN`. GHCR creates new packages as private by default. To allow anonymous pulls, set the package visibility to public in its GitHub settings after the first publish.
+The workflow accepts both private and public GHCR packages and records package metadata before and after each push. It publishes to the package paths `ghcr.io/j0770/turtl/{frontend,backend}` using the short-lived repository `GITHUB_TOKEN`. GHCR creates new packages as private by default. To allow anonymous pulls, set the package visibility to public in its GitHub settings after the first publish. Deployment also accepts the original `turtl-cicd-private` digest references so existing releases remain deployable.
 
 References: [GitHub registry defaults](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
 

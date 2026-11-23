@@ -313,8 +313,8 @@ jobs:
 
       - name: Validate GHCR deployment model
         env:
-          TURTL_FRONTEND_IMAGE: ghcr.io/j0770/turtl-cicd-private/frontend@sha256:1111111111111111111111111111111111111111111111111111111111111111
-          TURTL_BACKEND_IMAGE: ghcr.io/j0770/turtl-cicd-private/backend@sha256:2222222222222222222222222222222222222222222222222222222222222222
+          TURTL_FRONTEND_IMAGE: ghcr.io/j0770/turtl/frontend@sha256:1111111111111111111111111111111111111111111111111111111111111111
+          TURTL_BACKEND_IMAGE: ghcr.io/j0770/turtl/backend@sha256:2222222222222222222222222222222222222222222222222222222222222222
         run: |
           bash -n deploy/deploy-ghcr.sh
           bash -n deploy/check-release.sh

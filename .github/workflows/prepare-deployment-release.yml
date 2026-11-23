@@ -49,7 +49,7 @@ jobs:
             jq -er --arg commit "$SOURCE_COMMIT" --arg component "$component" '
               select(.commit == $commit and .component == $component and .cyclonedx_schema_valid == true)
               | .registry_ref
-              | select(test("^ghcr[.]io/j0770/turtl-cicd-private/" + $component + "@sha256:[0-9a-f]{64}$"))
+              | select(test("^ghcr[.]io/j0770/(turtl|turtl-cicd-private)/" + $component + "@sha256:[0-9a-f]{64}$"))
             ' "artifacts/published-$component/evidence/evidence.json" > "$component.ref"
           done
 

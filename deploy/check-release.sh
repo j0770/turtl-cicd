@@ -17,8 +17,8 @@ images=$(jq -ers '
   select(length == 1) | .[0]
   | select(.schema_version == 1 and (.commit | test("^[0-9a-f]{40}$")))
   | .images
-  | select(.frontend | test("^ghcr[.]io/j0770/turtl-cicd-private/frontend@sha256:[0-9a-f]{64}$"))
-  | select(.backend | test("^ghcr[.]io/j0770/turtl-cicd-private/backend@sha256:[0-9a-f]{64}$"))
+  | select(.frontend | test("^ghcr[.]io/j0770/(turtl|turtl-cicd-private)/frontend@sha256:[0-9a-f]{64}$"))
+  | select(.backend | test("^ghcr[.]io/j0770/(turtl|turtl-cicd-private)/backend@sha256:[0-9a-f]{64}$"))
   | [.frontend, .backend] | @tsv
 ' "$candidate")
 IFS=$'\t' read -r frontend backend <<< "$images"

@@ -11,8 +11,8 @@ export TURTL_FRONTEND_IMAGE=$1 TURTL_BACKEND_IMAGE=$2
 : "${TURTL_BACKUP_DIR:?Set TURTL_BACKUP_DIR to an absolute directory for deployment records and database backups}"
 : "${TURTL_BASE_URL:?Set TURTL_BASE_URL to the target HTTPS address}"
 
-if [[ ! $TURTL_FRONTEND_IMAGE =~ ^ghcr\.io/j0770/turtl-cicd-private/frontend@sha256:[0-9a-f]{64}$ ||
-      ! $TURTL_BACKEND_IMAGE =~ ^ghcr\.io/j0770/turtl-cicd-private/backend@sha256:[0-9a-f]{64}$ ||
+if [[ ! $TURTL_FRONTEND_IMAGE =~ ^ghcr\.io/j0770/(turtl|turtl-cicd-private)/frontend@sha256:[0-9a-f]{64}$ ||
+      ! $TURTL_BACKEND_IMAGE =~ ^ghcr\.io/j0770/(turtl|turtl-cicd-private)/backend@sha256:[0-9a-f]{64}$ ||
       $TURTL_BACKUP_DIR != /* || $TURTL_BASE_URL != https://?* ]]; then
   echo 'Expected the TURTL GHCR digest references, an absolute backup path and an HTTPS address.' >&2
   exit 2
