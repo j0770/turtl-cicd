@@ -106,7 +106,7 @@ python-dotenv==1.2.2
     # via -r requirements.in
 redis==7.4.0
     # via channels-redis
-requests==2.33.1
+requests==2.34.2
     # via -r requirements.in
 rules==3.5
     # via -r requirements.in
